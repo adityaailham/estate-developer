@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { FileText, Plus, Trash2, Sparkles, Loader2, X, RefreshCw, Layers } from 'lucide-react';
+import { FileText, Plus, Trash2, Loader2, X, RefreshCw, Layers } from 'lucide-react';
 
 export default function RabTemplatesPage() {
   const [templates, setTemplates] = useState([]);
@@ -176,7 +176,6 @@ export default function RabTemplatesPage() {
                   <div>
                     <h3 className="font-extrabold text-slate-900 text-xl tracking-tight flex items-center gap-2">
                       <span>{tem.house_type}</span>
-                      <Sparkles className="w-4 h-4 text-blue-500" />
                     </h3>
                     {tem.description && <p className="text-xs text-slate-500 mt-0.5">{tem.description}</p>}
                   </div>
@@ -209,7 +208,10 @@ export default function RabTemplatesPage() {
 
               <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-xs">
                 <span className="text-slate-400 font-medium">Mat: {formatRupiah(tem.total_material_budget)} | Upah: {formatRupiah(tem.total_labor_budget)}</span>
-                <span className="text-blue-600 font-bold">Siap Auto-Copy ⚡</span>
+                <span className="text-blue-600 font-bold flex items-center gap-1">
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>Siap Digunakan</span>
+                </span>
               </div>
             </div>
           ))

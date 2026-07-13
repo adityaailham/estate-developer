@@ -16,7 +16,6 @@ import {
   CheckCircle2, 
   Clock, 
   ChevronRight,
-  Sparkles,
   RefreshCw
 } from 'lucide-react';
 import { 
@@ -268,7 +267,7 @@ export default function DashboardPage() {
         <div className="bg-linear-to-br from-slate-900 to-indigo-950 text-white p-6 rounded-2xl shadow-xl flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-2 text-blue-400 text-xs font-bold tracking-wider uppercase">
-              <Sparkles className="w-4 h-4" />
+              <Wallet className="w-4 h-4" />
               <span>Ringkasan Anggaran RAB</span>
             </div>
             <h3 className="text-xl font-bold mt-1 text-white">Target RAB vs Realisasi</h3>

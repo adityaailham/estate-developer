@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, Plus, Trash2, Calendar, Building, Truck, Sparkles, Loader2, X, ArrowRight, Printer, Filter, RefreshCw } from 'lucide-react';
+import { ShoppingCart, Plus, Trash2, Calendar, Building, Truck, Loader2, X, ArrowRight, Printer, Filter, RefreshCw } from 'lucide-react';
 import Pagination from '@/components/Pagination';
 import SearchableSelect from '@/components/SearchableSelect';
 

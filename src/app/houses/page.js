@@ -9,7 +9,6 @@ import {
   Building2, 
   Search, 
   Filter, 
-  Sparkles, 
   ArrowRight, 
   CheckCircle2, 
   TrendingUp, 
@@ -325,8 +324,8 @@ function HousesContent() {
                         href={`/houses/${house.id}/cost-sheet`}
                         className="flex-1 px-4 py-2.5 rounded-xl bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 transition-all group"
                       >
-                        <Sparkles className="w-4 h-4 text-blue-200" />
-                        <span>⚡ Cost Sheet</span>
+                        <Wallet className="w-4 h-4 text-blue-200" />
+                        <span>Cost Sheet</span>
                         <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                       </Link>
                     </div>
@@ -382,9 +381,9 @@ function HousesContent() {
               )}
 
               <div className="p-3 rounded-xl bg-blue-50 border border-blue-200 text-blue-800 text-xs font-medium flex items-start gap-2">
-                <Sparkles className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
                 <span>
-                  <strong>Tips Auto-Copy CCMS:</strong> Saat disimpan, sistem otomatis mencari Template RAB dengan Tipe Rumah yang sama (misal <em>Tipe 36</em>) dan menyalin seluruh anggarannya ke unit ini.
+                  <strong>Informasi Sistem CCMS:</strong> Saat disimpan, sistem otomatis mencari Template RAB dengan Tipe Rumah yang sama (misal <em>Tipe 36</em>) dan menyalin seluruh anggarannya ke unit ini.
                 </span>
               </div>
 

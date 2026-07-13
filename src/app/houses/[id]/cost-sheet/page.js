@@ -10,7 +10,6 @@ import {
   Boxes, 
   Users2, 
   ArrowRightLeft, 
-  Sparkles, 
   TrendingUp, 
   AlertTriangle, 
   CheckCircle2, 
@@ -217,7 +216,7 @@ export default function HouseCostSheetPage({ params }) {
               {summary.variance_total >= 0 ? '+' : ''}{formatRupiah(summary.variance_total)}
             </h3>
             <p className="text-xs font-semibold mt-2 text-slate-300 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-blue-300" />
+              <CheckCircle2 className="w-3.5 h-3.5 text-blue-300" />
               <span>
                 {summary.variance_total >= 0 ? 'Hemat (Sisa anggaran tersedia)' : 'Melebihi target anggaran (Overbudget)'}
               </span>

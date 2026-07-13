@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ArrowRightLeft, Plus, Search, Filter, AlertCircle, CheckCircle2, Sparkles, Loader2, X, RefreshCw, Trash2, Calendar, Printer } from 'lucide-react';
+import { ArrowRightLeft, Plus, Search, Filter, AlertCircle, CheckCircle2, Loader2, X, RefreshCw, Trash2, Calendar, Printer } from 'lucide-react';
 import Pagination from '@/components/Pagination';
 import SearchableSelect from '@/components/SearchableSelect';
 
@@ -432,7 +432,7 @@ export default function MutationsPage() {
               {modalError && <div className="p-3 bg-red-50 text-red-700 rounded-xl text-xs font-medium">{modalError}</div>}
 
               <div className="p-3 rounded-xl bg-blue-50 border border-blue-200 text-blue-800 text-xs font-medium flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
+                <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
                 <span>
                   <strong>Otomatisasi FIFO Aktif:</strong> Sistem akan memotong stok dari nota pembelian terlama yang tersedia dan menetapkan harga biayanya secara presisi ke unit rumah.
                 </span>

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Users2, Plus, Wallet, CheckCircle2, Clock, AlertCircle, Sparkles, Loader2, X, RefreshCw, HardHat, Home } from 'lucide-react';
+import { Users2, Plus, Wallet, CheckCircle2, Clock, AlertCircle, Loader2, X, RefreshCw, HardHat, Home } from 'lucide-react';
 import Pagination from '@/components/Pagination';
 import SearchableSelect from '@/components/SearchableSelect';
 

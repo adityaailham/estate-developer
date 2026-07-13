@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { BookOpen, FileText, Printer, Shield, Compass, Sparkles, HelpCircle } from 'lucide-react';
+import { BookOpen, FileText, Printer, Shield, Compass, HelpCircle } from 'lucide-react';
 
 export default function PanduanPage() {
   const [isMounted, setIsMounted] = useState(false);
@@ -57,7 +57,7 @@ export default function PanduanPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
             <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
               <h3 className="font-bold text-slate-800 text-xs uppercase flex items-center gap-1.5 mb-2">
-                <Sparkles className="w-4 h-4 text-amber-500" /> Keunggulan Utama
+                <Shield className="w-4 h-4 text-amber-500" /> Keunggulan Utama
               </h3>
               <ul className="text-xs text-slate-600 space-y-1.5 list-disc pl-4">
                 <li>Real-time Cost Sheet Unit Rumah</li>
