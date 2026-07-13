@@ -16,6 +16,9 @@ const geistMono = Geist_Mono({
 export const metadata = {
   title: "ESTATE CCMS | Cost Control & Monitoring System",
   description: "Aplikasi Terintegrasi Manajemen Gudang Global, Mutasi FIFO Material, Upah Borongan, dan Laporan Cost Sheet Rumah untuk Developer Perumahan.",
+  icons: {
+    icon: "/gambar.jpg",
+  },
 };
 
 export default function RootLayout({ children }) {

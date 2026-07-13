@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { 
   LayoutDashboard, 
@@ -60,8 +61,14 @@ export default function Sidebar() {
     <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col h-screen sticky top-0 border-r border-slate-800 shrink-0 select-none shadow-2xl z-40 print:hidden">
       {/* Brand Header */}
       <div className="p-6 border-b border-slate-800/80 flex items-center gap-3 shrink-0">
-        <div className="w-10 h-10 rounded-xl bg-linear-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-blue-500/30 font-bold text-xl">
-          ED
+        <div className="w-11 h-11 rounded-xl bg-white/10 p-0.5 overflow-hidden flex items-center justify-center shrink-0 border border-slate-700/80 shadow-md">
+          <Image
+            src="/gambar.jpg"
+            alt="Logo Perusahaan"
+            width={44}
+            height={44}
+            className="w-full h-full object-cover rounded-lg"
+          />
         </div>
         <div>
           <h1 className="font-bold text-white tracking-wide text-lg leading-tight">ESTATE CCMS</h1>
