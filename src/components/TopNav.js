@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 
 const pageTitles = {
-  '/': { title: 'Dashboard Eksekutif', subtitle: 'Monitoring Real-time Biaya & Progres Proyek' },
+  '/': { title: 'Dashboard', subtitle: 'Monitoring Real-time Biaya & Progres Proyek' },
   '/projects': { title: 'Master Proyek Perumahan', subtitle: 'Daftar Proyek & Monitoring Status Blok Rumah' },
   '/houses': { title: 'Daftar Unit & Cost Sheet', subtitle: 'Kontrol Anggaran RAB Target vs Aktual Pengeluaran per Rumah' },
   '/materials': { title: 'Katalog Material & Stok', subtitle: 'Daftar Harga Satuan & Posisi Stok Gudang Terkini' },

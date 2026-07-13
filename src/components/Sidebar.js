@@ -24,7 +24,7 @@ const navItems = [
   {
     title: 'MENU UTAMA',
     items: [
-      { name: 'Dashboard Eksekutif', href: '/', icon: LayoutDashboard },
+      { name: 'Dashboard', href: '/', icon: LayoutDashboard },
       { name: 'Proyek Perumahan', href: '/projects', icon: Building2 },
       { name: 'Unit & Cost Sheet', href: '/houses', icon: Home },
     ]
