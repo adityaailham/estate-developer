@@ -1,36 +1,61 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Estate CCMS - Cost Control & Monitoring System
 
-## Getting Started
+## Deskripsi
+Estate CCMS adalah sistem informasi berbasis web yang dirancang khusus untuk pengembang (developer) perumahan dalam mengelola, melacak, dan mengendalikan biaya pembangunan proyek secara real-time. Aplikasi ini membantu menjembatani perencanaan anggaran (RAB) dengan pengeluaran aktual di lapangan secara presisi.
 
-First, run the development server:
+## Fungsi Utama
+Fungsi utama dari aplikasi ini adalah sebagai alat kontrol biaya pembangunan (Cost Control) yang terintegrasi guna mencegah terjadinya pembengkakan anggaran (over-budget) pada setiap unit rumah. Sistem melacak alokasi material gudang dengan metode FIFO, mengontrol kontrak borongan tenaga kerja, serta menyajikan analisis laba-rugi kotor konstruksi per unit melalui lembar biaya (Cost Sheet).
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Fitur Utama Proyek
+1. **Dashboard Eksekutif**: Menyajikan ringkasan keuangan proyek, grafik distribusi status unit rumah, nilai total aset gudang, serta perbandingan agregat target RAB vs realisasi aktual.
+2. **Manajemen Proyek Perumahan**: Portofolio lokasi proyek beserta statistik distribusi kemajuan pembangunan unit di setiap kawasan.
+3. **Daftar Unit & Laporan Cost Sheet**: Lembar biaya mendalam untuk setiap unit rumah yang merinci harga jual, realisasi biaya material (metode FIFO), upah tenaga kerja borongan, serta sisa anggaran (variance) secara otomatis.
+4. **Stok Gudang & Katalog Material**: Pencatatan inventaris bahan bangunan global, harga satuan rata-rata, kartu stok masuk-keluar, dan penyesuaian opname gudang.
+5. **Pembelian & Penerimaan Barang**: Pencatatan faktur pembelian material dari supplier dengan opsi alokasi langsung ke unit rumah (bypass) atau disimpan ke dalam gudang utama.
+6. **Mutasi Material (FIFO)**: Manajemen distribusi material dari gudang utama ke blok unit rumah dengan penghitungan biaya otomatis berbasis urutan pembelian terlama.
+7. **Kontrak Kerja Borongan**: Pencatatan kontrak kerja borongan dengan kepala tukang (mandor) per unit rumah beserta pelacakan termin pembayaran upah yang sudah direalisasikan.
+8. **Master Template RAB**: Pembuatan standar rincian kebutuhan material dan upah per tipe rumah (misalnya Tipe 36, Tipe 45) untuk disalin secara otomatis ketika unit rumah baru didaftarkan.
+9. **Direktori Supplier & Kepala Tukang**: Master data rekanan toko material dan daftar pelaksana pekerjaan borongan di lapangan.
+10. **Panduan Penggunaan Sistem**: Dokumentasi interaktif mengenai alur kerja aplikasi, logika perhitungan biaya FIFO, serta penanganan alur bisnis konstruksi.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Arsitektur Teknologi
+* **Framework**: Next.js (App Router)
+* **Bahasa**: JavaScript
+* **Database**: MySQL (diakses melalui mysql2/promise)
+* **Styling**: Tailwind CSS / Vanilla CSS
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## Panduan Instalasi Lokal
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Prasyarat
+* Node.js (versi 18 atau 20 LTS)
+* MySQL Server (XAMPP, Laragon, atau instalasi standalone)
+* Git
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Langkah Penginstalan
+1. Kloning repository proyek ini:
+   ```bash
+   git clone https://github.com/adityaailham/estate-developer.git
+   ```
+2. Masuk ke direktori proyek:
+   ```bash
+   cd estate-developer
+   ```
+3. Instal semua dependensi Node.js:
+   ```bash
+   npm install
+   ```
+4. Jalankan MySQL Server di komputer Anda, lalu buat database kosong baru (misalnya dengan nama `estate_developer`).
+5. Impor struktur database dari file `schema.sql` yang berada di direktori utama proyek ke dalam database baru tersebut.
+6. Buat file `.env.local` di direktori utama proyek, lalu isi dengan konfigurasi database MySQL Anda:
+   ```env
+   DB_HOST=localhost
+   DB_USER=username_mysql_anda
+   DB_PASSWORD=password_mysql_anda
+   DB_NAME=nama_database_anda
+   ```
+7. Jalankan server pembangunan Next.js:
+   ```bash
+   npm run dev
+   ```
+8. Buka browser dan akses alamat `http://localhost:3000`.
+9. (Opsional) Untuk mengisi database dengan data pengujian awal, buka tautan `http://localhost:3000/api/seed` di browser Anda setelah server berjalan.
