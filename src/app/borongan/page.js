@@ -322,10 +322,10 @@ export default function BoronganPage() {
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Nilai Kontrak (Rp) <span className="text-red-500">*</span></label>
                 <input
-                  type="number"
-                  placeholder="Contoh: 18500000"
-                  value={contractForm.contract_value}
-                  onChange={(e) => setContractForm({ ...contractForm, contract_value: e.target.value })}
+                  type="text"
+                  placeholder="Contoh: 18.500.000"
+                  value={contractForm.contract_value ? Number(contractForm.contract_value).toLocaleString('id-ID') : ''}
+                  onChange={(e) => setContractForm({ ...contractForm, contract_value: e.target.value.replace(/\D/g, '') })}
                   className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-bold focus:ring-2 focus:ring-purple-500"
                   required
                 />
@@ -380,11 +380,14 @@ export default function BoronganPage() {
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Jumlah Bayar Termin (Rp) <span className="text-red-500">*</span></label>
                 <input
-                  type="number"
-                  max={Number(selectedContract.contract_value) - Number(selectedContract.total_paid)}
-                  placeholder="Contoh: 5000000"
-                  value={paymentForm.amount}
-                  onChange={(e) => setPaymentForm({ ...paymentForm, amount: e.target.value })}
+                  type="text"
+                  placeholder="Contoh: 5.000.000"
+                  value={paymentForm.amount ? Number(paymentForm.amount).toLocaleString('id-ID') : ''}
+                  onChange={(e) => {
+                    const val = Number(e.target.value.replace(/\D/g, ''));
+                    const maxVal = Number(selectedContract.contract_value) - Number(selectedContract.total_paid);
+                    setPaymentForm({ ...paymentForm, amount: val > maxVal ? maxVal.toString() : val.toString() });
+                  }}
                   className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-bold focus:ring-2 focus:ring-emerald-500"
                   required
                 />

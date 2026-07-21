@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronDown, Search, Check, X } from 'lucide-react';
+import { ChevronDown, Search, Check, X, Plus } from 'lucide-react';
 
 export default function SearchableSelect({
   options = [],
@@ -13,6 +13,7 @@ export default function SearchableSelect({
   className = '',
   required = false,
   disabled = false,
+  allowCustom = false,
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -100,7 +101,8 @@ export default function SearchableSelect({
   });
 
   // Find currently selected option
-  const selectedOption = options.find((opt) => String(opt.value) === String(value) && opt.value !== '');
+  const selectedOption = options.find((opt) => String(opt.value) === String(value) && opt.value !== '')
+    || (allowCustom && value ? { value: value, label: value } : undefined);
 
   const handleSelect = (opt) => {
     if (onChange) {
@@ -219,14 +221,25 @@ export default function SearchableSelect({
               <div
                 onClick={() => handleSelect({ value: '', label: placeholder })}
                 className={`px-3 py-2 text-xs rounded-lg cursor-pointer transition flex items-center justify-between ${
-                  value === '' || !selectedOption
+                  value === '' || (selectedOption && selectedOption.value === '') || (!selectedOption && !searchQuery)
                     ? 'bg-blue-50 text-blue-700 font-bold'
                     : 'text-slate-400 hover:bg-slate-50'
                 }`}
               >
                 <span>-- Kosongkan / Belum Dipilih --</span>
-                {(value === '' || !selectedOption) && <Check className="w-3.5 h-3.5 text-blue-600" />}
+                {(value === '' || (selectedOption && selectedOption.value === '') || (!selectedOption && !searchQuery)) && <Check className="w-3.5 h-3.5 text-blue-600" />}
               </div>
+
+              {/* Custom option when typing */}
+              {allowCustom && searchQuery && (
+                <div
+                  onClick={() => handleSelect({ value: searchQuery, label: searchQuery })}
+                  className="px-3 py-2 my-1 text-xs rounded-lg cursor-pointer transition flex items-center justify-between text-blue-700 bg-blue-50/50 hover:bg-blue-100 font-bold border border-blue-200/50"
+                >
+                  <span>Gunakan &quot;{searchQuery}&quot; (Baru)</span>
+                  <Plus className="w-4 h-4 text-blue-600 shrink-0" />
+                </div>
+              )}
 
               {filteredOptions.length > 0 ? (
                 filteredOptions.map((opt) => {

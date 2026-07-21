@@ -362,10 +362,10 @@ export default function MaterialsPage() {
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Harga Acuan (Rp)</label>
                   <input
-                    type="number"
-                    placeholder="Contoh: 72000"
-                    value={formData.default_price}
-                    onChange={(e) => setFormData({ ...formData, default_price: e.target.value })}
+                    type="text"
+                    placeholder="Contoh: 72.000"
+                    value={formData.default_price ? Number(formData.default_price).toLocaleString('id-ID') : ''}
+                    onChange={(e) => setFormData({ ...formData, default_price: e.target.value.replace(/\D/g, '') })}
                     className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -434,7 +434,7 @@ export default function MaterialsPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">Harga Acuan (Rp)</label>
-                  <input type="number" value={editFormData.default_price} onChange={(e) => setEditFormData({ ...editFormData, default_price: e.target.value })} className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold" />
+                  <input type="text" value={editFormData.default_price ? Number(editFormData.default_price).toLocaleString('id-ID') : ''} onChange={(e) => setEditFormData({ ...editFormData, default_price: e.target.value.replace(/\D/g, '') })} className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold" />
                 </div>
                 <div>
                   <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">Min. Stok Warning</label>

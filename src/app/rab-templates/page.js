@@ -339,9 +339,9 @@ export default function RabTemplatesPage() {
                       <div className="sm:col-span-2">
                         <label className="block text-[10px] font-bold text-slate-400 uppercase">Est. Harga (Rp)</label>
                         <input
-                          type="number"
-                          value={item.estimated_price}
-                          onChange={(e) => handleItemChange(idx, 'estimated_price', e.target.value)}
+                          type="text"
+                          value={item.estimated_price ? Number(item.estimated_price).toLocaleString('id-ID') : ''}
+                          onChange={(e) => handleItemChange(idx, 'estimated_price', e.target.value.replace(/\D/g, ''))}
                           className="w-full px-2.5 py-1.5 rounded-lg border text-xs font-bold"
                         />
                       </div>

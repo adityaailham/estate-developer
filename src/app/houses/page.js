@@ -17,9 +17,11 @@ import {
   Loader2, 
   X,
   AlertCircle,
-  Edit3
+  Edit3,
+  Trash2
 } from 'lucide-react';
 import Pagination from '@/components/Pagination';
+import SearchableSelect from '@/components/SearchableSelect';
 
 function HousesContent() {
   const searchParams = useSearchParams();
@@ -27,6 +29,7 @@ function HousesContent() {
 
   const [houses, setHouses] = useState([]);
   const [projects, setProjects] = useState([]);
+  const [rabTemplates, setRabTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -65,14 +68,17 @@ function HousesContent() {
       if (selectedProject) {
         url += `?project_id=${selectedProject}`;
       }
-      const [housesRes, projectsRes] = await Promise.all([
+      const [housesRes, projectsRes, templatesRes] = await Promise.all([
         fetch(url),
-        fetch('/api/projects')
+        fetch('/api/projects'),
+        fetch('/api/rab-templates')
       ]);
       const housesJson = await housesRes.json();
       const projectsJson = await projectsRes.json();
+      const templatesJson = await templatesRes.json();
 
       if (housesJson.success) setHouses(housesJson.data);
+      if (templatesJson.success) setRabTemplates(templatesJson.data);
       if (projectsJson.success) {
         setProjects(projectsJson.data);
         if (!formData.project_id && projectsJson.data.length > 0 && !initialProjectId) {
@@ -123,6 +129,22 @@ function HousesContent() {
       setModalError('Terjadi kesalahan koneksi saat menyimpan unit');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDeleteHouse = async (id, blockName) => {
+    if (!confirm(`Hapus permanen unit rumah blok ${blockName} ini?\n\nPERINGATAN: Semua data RAB dan Cost Sheet unit ini akan ikut terhapus!`)) return;
+    
+    try {
+      const res = await fetch(`/api/houses/${id}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (json.success) {
+        fetchData();
+      } else {
+        alert(json.error || 'Gagal menghapus unit rumah');
+      }
+    } catch (err) {
+      alert('Terjadi kesalahan koneksi saat menghapus unit');
     }
   };
 
@@ -313,12 +335,19 @@ function HousesContent() {
                     {/* Action Buttons: Edit Status & Jump to Cost Sheet */}
                     <div className="mt-6 pt-4 border-t border-slate-100 flex items-center gap-2">
                       <button
+                        onClick={() => handleDeleteHouse(house.id, house.block_number)}
+                        className="p-2.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 transition shrink-0"
+                        title="Hapus Unit"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                      <button
                         onClick={() => openEditStatusModal(house)}
                         className="px-3 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 transition shrink-0 border border-slate-200"
                         title="Ubah Status & Progress"
                       >
                         <Clock className="w-3.5 h-3.5 text-slate-600" />
-                        <span>Ubah Status</span>
+                        <span>Status</span>
                       </button>
                       <Link
                         href={`/houses/${house.id}/cost-sheet`}
@@ -423,13 +452,18 @@ function HousesContent() {
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                     Tipe Rumah <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="text"
-                    placeholder="Contoh: Tipe 36 / Tipe 45"
+                  <SearchableSelect
+                    options={rabTemplates.map(t => ({
+                      value: t.house_type,
+                      label: t.house_type,
+                      sublabel: `Target RAB: ${formatRupiah(t.total_budget)}`
+                    }))}
                     value={formData.type}
-                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
+                    onChange={(val) => setFormData({ ...formData, type: val })}
+                    placeholder="-- Pilih Tipe Rumah --"
+                    searchPlaceholder="Ketik untuk mencari atau membuat baru..."
+                    allowCustom={true}
+                    required={true}
                   />
                 </div>
               </div>
@@ -440,10 +474,10 @@ function HousesContent() {
                     Harga Jual (Rp)
                   </label>
                   <input
-                    type="number"
-                    placeholder="Contoh: 350000000"
-                    value={formData.selling_price}
-                    onChange={(e) => setFormData({ ...formData, selling_price: e.target.value })}
+                    type="text"
+                    placeholder="Contoh: 350.000.000"
+                    value={formData.selling_price ? Number(formData.selling_price).toLocaleString('id-ID') : ''}
+                    onChange={(e) => setFormData({ ...formData, selling_price: e.target.value.replace(/\D/g, '') })}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>

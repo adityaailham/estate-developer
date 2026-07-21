@@ -507,9 +507,9 @@ export default function PurchasesPage() {
                       <div className="sm:col-span-2">
                         <label className="block text-[10px] font-bold text-slate-500 uppercase">Harga Satuan (Rp)</label>
                         <input
-                          type="number"
-                          value={item.price_unit}
-                          onChange={(e) => handleItemChange(idx, 'price_unit', e.target.value)}
+                          type="text"
+                          value={item.price_unit ? Number(item.price_unit).toLocaleString('id-ID') : ''}
+                          onChange={(e) => handleItemChange(idx, 'price_unit', e.target.value.replace(/\D/g, ''))}
                           className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs font-bold focus:ring-2 focus:ring-blue-500"
                           required
                         />

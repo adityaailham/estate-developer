@@ -45,3 +45,18 @@ export async function PUT(request, { params }) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+
+export async function DELETE(request, { params }) {
+  try {
+    const { id } = await params;
+    
+    // Deleting a house will cascade to house_rabs, house_rab_items, etc. (assuming foreign keys are set up with CASCADE)
+    // Or at least we can just delete from houses table directly.
+    await query('DELETE FROM houses WHERE id = ?', [id]);
+    
+    return NextResponse.json({ success: true, message: 'Unit rumah berhasil dihapus' });
+  } catch (error) {
+    console.error('Error deleting house:', error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
