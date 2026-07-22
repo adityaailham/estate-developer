@@ -44,3 +44,7 @@ next-env.d.ts
 Project_Discovery_Questionnaire_CCMS.md
 panduan_pengguna_dan_sistem.md
 /docs/
+
+# Agent & Skills
+.agents/
+skills-lock.json

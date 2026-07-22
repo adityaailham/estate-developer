@@ -61,23 +61,31 @@ function HousesContent() {
   const [editSubmitting, setEditSubmitting] = useState(false);
   const [editError, setEditError] = useState(null);
 
-  const fetchData = async () => {
+  const fetchHouses = async () => {
     try {
       setLoading(true);
       let url = '/api/houses';
       if (selectedProject) {
         url += `?project_id=${selectedProject}`;
       }
-      const [housesRes, projectsRes, templatesRes] = await Promise.all([
-        fetch(url),
+      const res = await fetch(url);
+      const json = await res.json();
+      if (json.success) setHouses(json.data);
+    } catch (err) {
+      setError('Terjadi kesalahan koneksi saat memuat data unit rumah');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchInitialData = async () => {
+    try {
+      const [projectsRes, templatesRes] = await Promise.all([
         fetch('/api/projects'),
         fetch('/api/rab-templates')
       ]);
-      const housesJson = await housesRes.json();
       const projectsJson = await projectsRes.json();
       const templatesJson = await templatesRes.json();
-
-      if (housesJson.success) setHouses(housesJson.data);
       if (templatesJson.success) setRabTemplates(templatesJson.data);
       if (projectsJson.success) {
         setProjects(projectsJson.data);
@@ -86,14 +94,16 @@ function HousesContent() {
         }
       }
     } catch (err) {
-      setError('Terjadi kesalahan koneksi saat memuat data unit rumah');
-    } finally {
-      setLoading(false);
+      console.error('Error fetching initial data:', err);
     }
   };
 
   useEffect(() => {
-    fetchData();
+    fetchInitialData();
+  }, []);
+
+  useEffect(() => {
+    fetchHouses();
   }, [selectedProject]);
 
   const handleCreateHouse = async (e) => {
@@ -121,7 +131,7 @@ function HousesContent() {
           selling_price: '',
           status: 'Belum Mulai'
         });
-        fetchData();
+        fetchHouses();
       } else {
         setModalError(json.error || 'Gagal menambahkan unit rumah');
       }
@@ -139,7 +149,7 @@ function HousesContent() {
       const res = await fetch(`/api/houses/${id}`, { method: 'DELETE' });
       const json = await res.json();
       if (json.success) {
-        fetchData();
+        fetchHouses();
       } else {
         alert(json.error || 'Gagal menghapus unit rumah');
       }
@@ -172,7 +182,7 @@ function HousesContent() {
       const json = await res.json();
       if (json.success) {
         setShowEditModal(false);
-        fetchData();
+        fetchHouses();
       } else {
         setEditError(json.error || 'Gagal memperbarui status unit rumah');
       }
