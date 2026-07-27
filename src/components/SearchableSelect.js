@@ -147,8 +147,8 @@ export default function SearchableSelect({
       >
         <div className="flex-1 truncate">
           {selectedOption ? (
-            <div className="flex items-center gap-1.5 truncate">
-              <span className="truncate text-slate-900">{selectedOption.label}</span>
+            <div className="flex items-center justify-between gap-2 w-full min-w-0">
+              <span className="truncate text-slate-900 flex-1 text-left">{selectedOption.label}</span>
               {selectedOption.sublabel && (
                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 shrink-0 font-normal">
                   {selectedOption.sublabel}

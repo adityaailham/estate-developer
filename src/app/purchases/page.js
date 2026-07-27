@@ -58,11 +58,27 @@ export default function PurchasesPage() {
       }
       if (matJson.success) {
         setMaterials(matJson.data);
-        if (matJson.data.length > 0) {
+        let defaultMatId = matJson.data.length > 0 ? matJson.data[0].id : '';
+        let defaultPrice = matJson.data.length > 0 ? matJson.data[0].default_price : 0;
+        
+        if (typeof window !== 'undefined') {
+           const params = new URLSearchParams(window.location.search);
+           const paramMatId = params.get('mat_id');
+           if (paramMatId) {
+              const selectedMat = matJson.data.find(m => String(m.id) === paramMatId);
+              if (selectedMat) {
+                 defaultMatId = selectedMat.id;
+                 defaultPrice = selectedMat.default_price;
+                 setShowModal(true);
+              }
+           }
+        }
+
+        if (defaultMatId) {
           setFormItems([{
-            material_id: matJson.data[0].id,
+            material_id: defaultMatId,
             quantity: 1,
-            price_unit: matJson.data[0].default_price || 0,
+            price_unit: defaultPrice || 0,
             destination_type: 'Gudang',
             house_id: houJson.success && houJson.data.length > 0 ? houJson.data[0].id : ''
           }]);
@@ -477,7 +493,7 @@ export default function PurchasesPage() {
                 <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
                   {formItems.map((item, idx) => (
                     <div key={idx} className="p-4 rounded-xl border border-slate-200 bg-white shadow-xs grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
-                      <div className="sm:col-span-3">
+                      <div className="sm:col-span-4">
                         <label className="block text-[10px] font-bold text-slate-500 uppercase">Material</label>
                         <SearchableSelect
                           value={item.material_id}
@@ -492,7 +508,7 @@ export default function PurchasesPage() {
                         />
                       </div>
 
-                      <div className="sm:col-span-2">
+                      <div className="sm:col-span-1">
                         <label className="block text-[10px] font-bold text-slate-500 uppercase">Jumlah</label>
                         <input
                           type="number"

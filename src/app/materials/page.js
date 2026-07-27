@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Boxes, Plus, Search, AlertTriangle, CheckCircle2, ArrowUpDown, Loader2, X, RefreshCw, Edit, Trash2 } from 'lucide-react';
+import Link from 'next/link';
+import { Boxes, Plus, Search, AlertTriangle, CheckCircle2, ArrowUpDown, Loader2, X, RefreshCw, Edit, Trash2, ShoppingCart } from 'lucide-react';
 import Pagination from '@/components/Pagination';
 
 export default function MaterialsPage() {
@@ -264,6 +265,15 @@ export default function MaterialsPage() {
                           </td>
                           <td className="py-4 px-6 text-center">
                             <div className="flex items-center justify-center gap-1.5">
+                              {isLow && (
+                                <Link
+                                  href={`/purchases?mat_id=${mat.id}`}
+                                  className="p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 transition"
+                                  title="Input Stok (Beli)"
+                                >
+                                  <ShoppingCart className="w-4 h-4" />
+                                </Link>
+                              )}
                               <button
                                 onClick={() => openEditModal(mat)}
                                 className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition"
