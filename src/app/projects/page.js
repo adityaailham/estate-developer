@@ -15,8 +15,10 @@ import {
   AlertCircle,
   X
 } from 'lucide-react';
+import { useToast } from '@/components/ToastContext';
 
 export default function ProjectsPage() {
+  const { showToast } = useToast();
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -51,13 +53,12 @@ export default function ProjectsPage() {
   const handleCreateProject = async (e) => {
     e.preventDefault();
     if (!formData.name.trim()) {
-      setModalError('Nama proyek wajib diisi');
+      showToast('Nama proyek wajib diisi', 'error');
       return;
     }
 
     try {
       setSubmitting(true);
-      setModalError(null);
       const res = await fetch('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -66,13 +67,14 @@ export default function ProjectsPage() {
       const json = await res.json();
       if (json.success) {
         setShowModal(false);
+        showToast('Proyek berhasil dibuat', 'success');
         setFormData({ name: '', location: '' });
         fetchProjects(); // Refresh data
       } else {
-        setModalError(json.error || 'Gagal membuat proyek baru');
+        showToast(json.error || 'Gagal membuat proyek baru', 'error');
       }
     } catch (err) {
-      setModalError('Terjadi kesalahan koneksi saat menyimpan proyek');
+      showToast('Terjadi kesalahan koneksi saat menyimpan proyek', 'error');
     } finally {
       setSubmitting(false);
     }

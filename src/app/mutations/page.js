@@ -4,8 +4,10 @@ import React, { useState, useEffect } from 'react';
 import { ArrowRightLeft, Plus, Search, Filter, AlertCircle, CheckCircle2, Loader2, X, RefreshCw, Trash2, Calendar, Printer } from 'lucide-react';
 import Pagination from '@/components/Pagination';
 import SearchableSelect from '@/components/SearchableSelect';
+import { useToast } from '@/components/ToastContext';
 
 export default function MutationsPage() {
+  const { showToast } = useToast();
   const [mutations, setMutations] = useState([]);
   const [materials, setMaterials] = useState([]);
   const [houses, setHouses] = useState([]);
@@ -18,6 +20,10 @@ export default function MutationsPage() {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [isMounted, setIsMounted] = useState(false);
 
+  // Filter specific to house mutations
+  const [houseStock, setHouseStock] = useState([]);
+  const [loadingStock, setLoadingStock] = useState(false);
+
   useEffect(() => {
     setIsMounted(true);
   }, []);
@@ -25,14 +31,14 @@ export default function MutationsPage() {
   // Modal State
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
-    material_id: '',
     type: 'Keluar-Rumah',
-    quantity: '',
     source_house_id: '',
     destination_house_id: '',
-    difference: '', // For Opname
     mutation_date: new Date().toISOString().split('T')[0]
   });
+  const [formItems, setFormItems] = useState([
+    { material_id: '', quantity: '', difference: '' }
+  ]);
   const [submitting, setSubmitting] = useState(false);
   const [modalError, setModalError] = useState(null);
 
@@ -53,18 +59,46 @@ export default function MutationsPage() {
       if (mutJson.success) setMutations(mutJson.data);
       if (matJson.success) {
         setMaterials(matJson.data);
-        if (matJson.data.length > 0 && !formData.material_id) {
-          setFormData(prev => ({ ...prev, material_id: matJson.data[0].id }));
+        if (matJson.data.length > 0) {
+          setFormItems(prev => prev[0].material_id ? prev : [{ ...prev[0], material_id: matJson.data[0].id }]);
         }
       }
       if (houJson.success) {
         setHouses(houJson.data);
         if (houJson.data.length > 0) {
+          let urlTargetDest = null;
+          let urlTargetType = null;
+          let shouldOpenModal = false;
+          let actionOut = false;
+          let urlHouseId = null;
+          
+          if (typeof window !== 'undefined' && window.location.search) {
+            const params = new URLSearchParams(window.location.search);
+            actionOut = params.get('action') === 'out';
+            urlHouseId = params.get('house_id');
+            if (urlHouseId) urlTargetDest = Number(urlHouseId);
+            if (params.get('type')) urlTargetType = params.get('type');
+            
+            if (params.get('action') === 'new') shouldOpenModal = true;
+            if (actionOut) {
+              shouldOpenModal = true;
+              urlTargetType = params.get('type') || 'Retur-Gudang';
+            }
+            
+            // clear the url without refreshing so it doesn't trigger again
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+          
           setFormData(prev => ({ 
             ...prev, 
-            destination_house_id: houJson.data[0].id,
-            source_house_id: houJson.data[0].id
+            destination_house_id: urlTargetDest || prev.destination_house_id || houJson.data[0].id,
+            source_house_id: actionOut && urlHouseId ? Number(urlHouseId) : (prev.source_house_id || houJson.data[0].id),
+            type: urlTargetType || prev.type || 'Keluar-Rumah'
           }));
+          
+          if (shouldOpenModal) {
+            setShowModal(true);
+          }
         }
       }
     } catch (err) {
@@ -78,10 +112,60 @@ export default function MutationsPage() {
     fetchData();
   }, [filterMaterial]);
 
+  useEffect(() => {
+    const isOutward = formData.type === 'Retur-Gudang' || formData.type === 'Pindah-Rumah';
+    if (isOutward && formData.source_house_id) {
+      const fetchStock = async () => {
+        setLoadingStock(true);
+        try {
+          const res = await fetch(`/api/houses/${formData.source_house_id}/materials`);
+          const json = await res.json();
+          if (json.success && json.data) {
+            const stockData = json.data.site_stock || [];
+            setHouseStock(stockData);
+            const available = stockData.filter(s => Number(s.stock_quantity) > 0);
+            if (available.length > 0) {
+               setFormItems(prev => prev[0].material_id ? prev : [{ ...prev[0], material_id: available[0].material_id }]);
+            }
+          }
+        } catch (e) {
+          console.error(e);
+        } finally {
+          setLoadingStock(false);
+        }
+      };
+      fetchStock();
+    } else {
+      setHouseStock([]);
+    }
+  }, [formData.source_house_id, formData.type]);
+
+  const handleAddItem = () => {
+    const firstMat = materials.length > 0 ? materials[0].id : '';
+    setFormItems([...formItems, { material_id: firstMat, quantity: '', difference: '' }]);
+  };
+
+  const handleRemoveItem = (idx) => {
+    if (formItems.length > 1) {
+      setFormItems(formItems.filter((_, i) => i !== idx));
+    }
+  };
+
+  const handleItemChange = (idx, field, value) => {
+    const updated = [...formItems];
+    updated[idx][field] = value;
+    setFormItems(updated);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.material_id || !formData.type || !formData.mutation_date) {
-      setModalError('Material, Tipe Mutasi, dan Tanggal wajib diisi');
+    if (!formData.type || !formData.mutation_date) {
+      setModalError('Tipe Mutasi dan Tanggal wajib diisi');
+      return;
+    }
+    const hasEmptyItem = formItems.some(i => !i.material_id || (!i.quantity && formData.type !== 'Opname-Penyesuaian'));
+    if (hasEmptyItem) {
+      setModalError('Semua baris material harus memiliki material dan jumlah yang valid');
       return;
     }
 
@@ -89,12 +173,23 @@ export default function MutationsPage() {
       setSubmitting(true);
       setModalError(null);
 
-      const payload = { ...formData };
-      if (formData.type === 'Opname-Penyesuaian') {
-        payload.difference = Number(formData.difference);
-        payload.quantity = Math.abs(Number(formData.difference));
-      } else {
-        payload.quantity = Number(formData.quantity);
+      const payload = { ...formData, items: formItems.map(i => {
+        if (formData.type === 'Opname-Penyesuaian') {
+          return { ...i, difference: Number(i.difference), quantity: Math.abs(Number(i.difference)) };
+        }
+        return { ...i, quantity: Number(i.quantity) };
+      })};
+      
+      const isOutward = formData.type === 'Retur-Gudang' || formData.type === 'Pindah-Rumah';
+      if (isOutward) {
+         for (const item of payload.items) {
+           const selectedStock = houseStock.find(s => String(s.material_id) === String(item.material_id));
+           if (!selectedStock || item.quantity > Number(selectedStock.stock_quantity)) {
+              setModalError(`Kuantitas mutasi melebihi stok siap pakai untuk salah satu material.`);
+              setSubmitting(false);
+              return;
+           }
+         }
       }
 
       const res = await fetch('/api/mutations', {
@@ -106,20 +201,19 @@ export default function MutationsPage() {
       if (json.success) {
         setShowModal(false);
         setFormData({
-          material_id: materials.length > 0 ? materials[0].id : '',
           type: 'Keluar-Rumah',
-          quantity: '',
           source_house_id: houses.length > 0 ? houses[0].id : '',
           destination_house_id: houses.length > 0 ? houses[0].id : '',
-          difference: '',
           mutation_date: new Date().toISOString().split('T')[0]
         });
+        setFormItems([{ material_id: materials.length > 0 ? materials[0].id : '', quantity: '', difference: '' }]);
+        showToast('Mutasi berhasil disimpan', 'success');
         fetchData();
       } else {
-        setModalError(json.error || 'Gagal memproses mutasi material');
+        showToast(json.error || 'Gagal memproses mutasi material', 'error');
       }
     } catch (err) {
-      setModalError('Terjadi kesalahan koneksi saat memproses mutasi');
+      showToast('Terjadi kesalahan koneksi saat memproses mutasi', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -131,13 +225,13 @@ export default function MutationsPage() {
       const res = await fetch(`/api/mutations/${mut.id}`, { method: 'DELETE' });
       const json = await res.json();
       if (json.success) {
-        alert('Mutasi berhasil dibatalkan dan stok telah disesuaikan!');
+        showToast('Mutasi berhasil dibatalkan dan stok disesuaikan', 'success');
         fetchData();
       } else {
-        alert('Gagal membatalkan: ' + (json.error || 'Terjadi kesalahan'));
+        showToast('Gagal membatalkan: ' + (json.error || 'Terjadi kesalahan'), 'error');
       }
     } catch (err) {
-      alert('Terjadi kesalahan koneksi saat membatalkan mutasi');
+      showToast('Terjadi kesalahan koneksi saat membatalkan mutasi', 'error');
     }
   };
 
@@ -417,7 +511,7 @@ export default function MutationsPage() {
       {/* Modal Catat Mutasi Lapangan */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn print:hidden">
-          <div className="bg-white rounded-2xl border border-slate-200 max-w-lg w-full p-6 shadow-2xl relative">
+          <div className="bg-white rounded-2xl border border-slate-200 max-w-3xl w-full p-6 shadow-2xl relative max-h-[95vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
                 <ArrowRightLeft className="w-5 h-5 text-blue-600" />
@@ -449,7 +543,7 @@ export default function MutationsPage() {
                     <option value="Keluar-Rumah">Keluar ke Rumah (FIFO)</option>
                     <option value="Retur-Gudang">Retur dari Rumah ke Gudang</option>
                     <option value="Pindah-Rumah">Pindah Antar Rumah</option>
-                    <option value="Opname-Penyesuaian">Stok Opname Penyesuaian</option>
+
                   </select>
                 </div>
                 <div>
@@ -464,48 +558,77 @@ export default function MutationsPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Material yang Dimutasi <span className="text-red-500">*</span></label>
-                <SearchableSelect
-                  value={formData.material_id}
-                  onChange={(val) => setFormData({ ...formData, material_id: val })}
-                  options={materials.map(m => ({
-                    value: m.id,
-                    label: `${m.name} (${m.code})`,
-                    sublabel: `Satuan: ${m.unit} | Stok: ${Number(m.stock_quantity).toLocaleString('id-ID')}`
-                  }))}
-                  placeholder="-- Ketik / Pilih Material --"
-                  required
-                />
-              </div>
+              {/* Material Items List */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-slate-700 uppercase">
+                    Daftar Material {loadingStock && <span className="text-blue-500 font-normal normal-case">(Memuat stok...)</span>}
+                    <span className="text-red-500"> *</span>
+                  </label>
+                  <button type="button" onClick={handleAddItem} className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-bold transition flex items-center gap-1">
+                    <Plus className="w-3.5 h-3.5" /> Tambah Baris
+                  </button>
+                </div>
 
-              {formData.type === 'Opname-Penyesuaian' ? (
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Selisih Opname (Positif = Surplus, Negatif = Rusak/Hilang) <span className="text-red-500">*</span></label>
-                  <input
-                    type="number"
-                    placeholder="Contoh: -5 (hilang 5 sak) atau 2 (surplus 2 sak)"
-                    value={formData.difference}
-                    onChange={(e) => setFormData({ ...formData, difference: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-bold focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
+                <div className="max-h-64 overflow-y-auto pr-2 space-y-3">
+                  {formItems.map((item, idx) => (
+                    <div key={idx} className="flex flex-col sm:flex-row gap-3 p-3 rounded-xl border border-slate-200 bg-slate-50 relative group">
+                      <div className="flex-1">
+                        <SearchableSelect
+                          value={item.material_id}
+                          onChange={(val) => handleItemChange(idx, 'material_id', val)}
+                          options={(formData.type === 'Retur-Gudang' || formData.type === 'Pindah-Rumah') ? 
+                            houseStock.filter(m => Number(m.stock_quantity) > 0).map(m => ({
+                              value: m.material_id,
+                              label: `${m.name} (${m.code})`,
+                              sublabel: `Satuan: ${m.unit} | Stok Siap Pakai: ${Number(m.stock_quantity).toLocaleString('id-ID')}`
+                            }))
+                            : materials.map(m => ({
+                              value: m.id,
+                              label: `${m.name} (${m.code})`,
+                              sublabel: `Satuan: ${m.unit} | Stok Gudang: ${Number(m.stock_quantity).toLocaleString('id-ID')}`
+                            }))
+                          }
+                          placeholder={loadingStock ? "Memuat..." : "-- Ketik / Pilih Material --"}
+                          required
+                        />
+                      </div>
+                      <div className="w-full sm:w-40 flex-shrink-0">
+                        {formData.type === 'Opname-Penyesuaian' ? (
+                          <input
+                            type="number"
+                            placeholder="Cth: -5 atau 2"
+                            value={item.difference}
+                            onChange={(e) => handleItemChange(idx, 'difference', e.target.value)}
+                            className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-bold focus:ring-2 focus:ring-blue-500"
+                            required
+                          />
+                        ) : (
+                          <input
+                            type="number"
+                            placeholder="Jumlah"
+                            value={item.quantity}
+                            onChange={(e) => handleItemChange(idx, 'quantity', e.target.value)}
+                            className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-bold focus:ring-2 focus:ring-blue-500"
+                            required
+                            min="0.01"
+                            step="any"
+                          />
+                        )}
+                      </div>
+                      <div className="flex items-center justify-end">
+                        {formItems.length > 1 ? (
+                          <button type="button" onClick={() => handleRemoveItem(idx)} className="p-2 text-red-500 hover:bg-red-100 rounded-lg transition" title="Hapus baris">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        ) : (
+                          <div className="w-8"></div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ) : (
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Jumlah (<span className="text-blue-600">Positif</span>) <span className="text-red-500">*</span></label>
-                  <input
-                    type="number"
-                    min="0.1"
-                    step="any"
-                    placeholder="Contoh: 10"
-                    value={formData.quantity}
-                    onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-bold focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-              )}
+              </div>
 
               {/* Conditional House Selectors */}
               {formData.type === 'Keluar-Rumah' && (

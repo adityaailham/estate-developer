@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, Plus, Trash2, Calendar, Building, Truck, Loader2, X, ArrowRight, Printer, Filter, RefreshCw } from 'lucide-react';
+import { Plus, Search, Filter, AlertCircle, ShoppingCart, Loader2, RefreshCw, Trash2, Calendar, FileText, Settings, Store, X, Printer, Building, Truck, ArrowRight } from 'lucide-react';
 import Pagination from '@/components/Pagination';
 import SearchableSelect from '@/components/SearchableSelect';
+import { useToast } from '@/components/ToastContext';
 
 export default function PurchasesPage() {
+  const { showToast } = useToast();
   const [purchases, setPurchases] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [materials, setMaterials] = useState([]);
@@ -70,18 +72,36 @@ export default function PurchasesPage() {
                  defaultMatId = selectedMat.id;
                  defaultPrice = selectedMat.default_price;
                  setShowModal(true);
+                 // Clear URL parameter so it doesn't trigger again on subsequent fetches
+                 window.history.replaceState({}, document.title, window.location.pathname);
+
+                 setFormItems([{
+                   material_id: defaultMatId,
+                   quantity: 1,
+                   price_unit: defaultPrice || 0,
+                   destination_type: 'Gudang',
+                   house_id: houJson.success && houJson.data.length > 0 ? houJson.data[0].id : ''
+                 }]);
+                 
+                 // Skip the default setting below
+                 defaultMatId = null;
               }
            }
         }
 
         if (defaultMatId) {
-          setFormItems([{
-            material_id: defaultMatId,
-            quantity: 1,
-            price_unit: defaultPrice || 0,
-            destination_type: 'Gudang',
-            house_id: houJson.success && houJson.data.length > 0 ? houJson.data[0].id : ''
-          }]);
+          setFormItems(prev => {
+            if (prev.length === 1 && prev[0].material_id === '') {
+              return [{
+                material_id: defaultMatId,
+                quantity: 1,
+                price_unit: defaultPrice || 0,
+                destination_type: 'Gudang',
+                house_id: houJson.success && houJson.data.length > 0 ? houJson.data[0].id : ''
+              }];
+            }
+            return prev;
+          });
         }
       }
       if (houJson.success) setHouses(houJson.data);
@@ -153,13 +173,14 @@ export default function PurchasesPage() {
       const json = await res.json();
       if (json.success) {
         setShowModal(false);
+        showToast('Nota pembelian berhasil disimpan', 'success');
         setFormHeader({ supplier_id: suppliers.length > 0 ? suppliers[0].id : '', invoice_number: '', purchase_date: new Date().toISOString().split('T')[0] });
         fetchData();
       } else {
-        setModalError(json.error || 'Gagal menyimpan transaksi pembelian');
+        showToast(json.error || 'Gagal menyimpan transaksi pembelian', 'error');
       }
     } catch (err) {
-      setModalError('Terjadi kesalahan koneksi saat memproses pembelian');
+      showToast('Terjadi kesalahan koneksi saat memproses pembelian', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -171,13 +192,13 @@ export default function PurchasesPage() {
       const res = await fetch(`/api/purchases/${purchase.id}`, { method: 'DELETE' });
       const json = await res.json();
       if (json.success) {
-        alert('Nota pembelian berhasil dibatalkan & stok gudang disesuaikan!');
+        showToast('Nota pembelian berhasil dibatalkan & stok disesuaikan', 'success');
         fetchData();
       } else {
-        alert('Gagal menghapus nota: ' + (json.error || 'Terjadi kesalahan'));
+        showToast('Gagal menghapus nota: ' + (json.error || 'Terjadi kesalahan'), 'error');
       }
     } catch (err) {
-      alert('Terjadi kesalahan koneksi saat menghapus nota pembelian');
+      showToast('Terjadi kesalahan koneksi saat menghapus nota', 'error');
     }
   };
 
@@ -240,7 +261,7 @@ export default function PurchasesPage() {
             <p className="text-xs text-slate-600 font-medium">Sistem Kontrol HPP & Manajemen Inventaris Konstruksi</p>
           </div>
           <div className="text-right">
-            <h2 className="text-lg font-bold text-slate-800">LAPORAN NOTA PEMBELIAN MATERIAL (MASUK GUDANG / BYPASS)</h2>
+            <h2 className="text-lg font-bold text-slate-800">LAPORAN NOTA PEMBELIAN MATERIAL</h2>
             <p className="text-xs text-slate-600">
               Periode: {isMounted && filterStartDate ? new Date(filterStartDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : (filterStartDate || 'Awal')} s/d {isMounted && filterEndDate ? new Date(filterEndDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : (filterEndDate || 'Sekarang')}
             </p>
@@ -254,10 +275,10 @@ export default function PurchasesPage() {
         <div>
           <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2.5">
             <ShoppingCart className="w-6 h-6 text-blue-600" />
-            <span>Pencatatan Pembelian & Nota Masuk (Bypass Option)</span>
+            <span>Pencatatan Pembelian (Masuk Gudang / Langsung Lapangan)</span>
           </h2>
           <p className="text-xs text-slate-500 mt-1">
-            Catat pembelian material dari supplier. Pilih tujuan masuk ke Gudang Utama atau langsung Bypass ke proyek per unit rumah.
+            Catat pembelian material dari supplier. Pilih tujuan masuk ke Gudang Utama atau dikirim langsung ke proyek per unit rumah.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -457,7 +478,22 @@ export default function PurchasesPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">No. Nota / Invoice <span className="text-red-500">*</span></label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-700 uppercase">No. Nota / Invoice <span className="text-red-500">*</span></label>
+                    <button 
+                      type="button" 
+                      onClick={() => {
+                        const today = new Date();
+                        const dateStr = today.toISOString().split('T')[0].replace(/-/g, '');
+                        const random = Math.floor(1000 + Math.random() * 9000);
+                        setFormHeader({ ...formHeader, invoice_number: `INV-${dateStr}-${random}` });
+                      }}
+                      className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-lg hover:bg-blue-100 transition"
+                      title="Buat nomor otomatis jika tidak ada nota"
+                    >
+                      Generate Otomatis
+                    </button>
+                  </div>
                   <input
                     type="text"
                     placeholder="Contoh: INV/2026/07/001"
@@ -483,10 +519,10 @@ export default function PurchasesPage() {
               {/* Items List */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider">Daftar Item Belanja & Pilihan Bypass</h4>
+                  <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider">Daftar Item Belanja & Pilihan Tujuan</h4>
                   <button type="button" onClick={handleAddItem} className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-xl text-xs font-bold hover:bg-blue-100 transition flex items-center gap-1">
                     <Plus className="w-3.5 h-3.5" />
-                    <span>+ Tambah Item</span>
+                    <span>Tambah Item</span>
                   </button>
                 </div>
 
@@ -539,7 +575,7 @@ export default function PurchasesPage() {
                           className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs font-bold bg-blue-50/50 focus:ring-2 focus:ring-blue-500"
                         >
                           <option value="Gudang">Masuk Gudang (FIFO)</option>
-                          <option value="Rumah">Bypass ke Rumah</option>
+                          <option value="Rumah">Kirim Langsung ke Rumah</option>
                         </select>
                       </div>
 

@@ -9,14 +9,14 @@ export async function DELETE(request, { params }) {
     await connection.beginTransaction();
 
     // 1. Fetch purchase header and items
-    const [purchases] = await connection.execute('SELECT * FROM purchases WHERE id = ? FOR UPDATE', [id]);
+    const [purchases] = await connection.execute('SELECT * FROM purchases WHERE id = ?', [id]);
     if (purchases.length === 0) {
       await connection.rollback();
       connection.release();
       return NextResponse.json({ success: false, error: 'Nota pembelian tidak ditemukan' }, { status: 404 });
     }
 
-    const [items] = await connection.execute('SELECT * FROM purchase_items WHERE purchase_id = ? FOR UPDATE', [id]);
+    const [items] = await connection.execute('SELECT * FROM purchase_items WHERE purchase_id = ?', [id]);
 
     // 2. Cek keamanan setiap item
     for (const item of items) {
@@ -35,7 +35,7 @@ export async function DELETE(request, { params }) {
         }
 
         // Cek apakah stok di gudang saat ini cukup untuk dikurangi
-        const [stockRows] = await connection.execute('SELECT quantity FROM warehouse_stocks WHERE material_id = ? FOR UPDATE', [material_id]);
+        const [stockRows] = await connection.execute('SELECT quantity FROM warehouse_stocks WHERE material_id = ?', [material_id]);
         const currentStock = stockRows.length > 0 ? Number(stockRows[0].quantity) : 0;
         if (currentStock < Number(quantity)) {
           await connection.rollback();

@@ -47,12 +47,13 @@ export async function POST(request) {
     const body = await request.json();
     const { project_id, block_number, type, selling_price, status } = body;
 
-    if (!project_id || !block_number || !type) {
+    if (!project_id || !block_number) {
       await connection.rollback();
       connection.release();
-      return NextResponse.json({ success: false, error: 'Proyek, Nomor Blok, dan Tipe Rumah wajib diisi' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'Proyek dan Nomor Blok wajib diisi' }, { status: 400 });
     }
 
+    const finalType = (type || 'Rumah Contoh').trim();
     const initialStatus = status || 'Belum Mulai';
     let initialProgress = 0;
     if (initialStatus === 'Pembangunan') initialProgress = 50;
@@ -61,7 +62,7 @@ export async function POST(request) {
     // 1. Insert house
     const [houseResult] = await connection.execute(
       'INSERT INTO houses (project_id, block_number, type, selling_price, status, progress_percent) VALUES (?, ?, ?, ?, ?, ?)',
-      [project_id, block_number.trim(), type.trim(), selling_price || 0, initialStatus, initialProgress]
+      [project_id, block_number.trim(), finalType, selling_price || 0, initialStatus, initialProgress]
     );
     const houseId = houseResult.insertId;
 
@@ -89,8 +90,8 @@ export async function POST(request) {
 
       for (const item of templateItems) {
         await connection.execute(
-          'INSERT INTO house_rab_items (house_rab_id, item_type, material_id, name, quantity, unit, estimated_price) VALUES (?, ?, ?, ?, ?, ?, ?)',
-          [houseRabId, item.item_type, item.material_id || null, item.name, item.quantity, item.unit, item.estimated_price]
+          'INSERT INTO house_rab_items (house_rab_id, item_type, material_id, name, quantity, unit, estimated_price, phase) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+          [houseRabId, item.item_type, item.material_id || null, item.name, item.quantity, item.unit, item.estimated_price, item.phase || 'Umum']
         );
       }
     }

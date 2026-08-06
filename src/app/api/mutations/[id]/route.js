@@ -9,7 +9,7 @@ export async function DELETE(request, { params }) {
     await connection.beginTransaction();
 
     // 1. Fetch mutation details
-    const [mutRows] = await connection.execute('SELECT * FROM material_mutations WHERE id = ? FOR UPDATE', [id]);
+    const [mutRows] = await connection.execute('SELECT * FROM material_mutations WHERE id = ?', [id]);
     if (mutRows.length === 0) {
       await connection.rollback();
       connection.release();
@@ -58,7 +58,7 @@ export async function DELETE(request, { params }) {
       }
     } else if (type === 'Beli-Gudang' || type === 'Retur-Gudang') {
       // Cek apakah stok di gudang masih cukup untuk dikurangi
-      const [stockRows] = await connection.execute('SELECT quantity FROM warehouse_stocks WHERE material_id = ? FOR UPDATE', [material_id]);
+      const [stockRows] = await connection.execute('SELECT quantity FROM warehouse_stocks WHERE material_id = ?', [material_id]);
       const currentStock = stockRows.length > 0 ? Number(stockRows[0].quantity) : 0;
       if (currentStock < quantity) {
         await connection.rollback();

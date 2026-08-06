@@ -47,16 +47,37 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: 'Unit Rumah, Kepala Tukang, Nama Pekerjaan, dan Nilai Kontrak wajib diisi' }, { status: 400 });
     }
 
-    const result = await query(
-      'INSERT INTO borongan_contracts (house_id, kepala_tukang_id, work_name, contract_value, status) VALUES (?, ?, ?, ?, ?)',
-      [house_id, kepala_tukang_id, work_name.trim(), Number(contract_value), status || 'Aktif']
-    );
+    const db = await getDbConnection();
+    const connection = await db.getConnection();
+    try {
+      await connection.beginTransaction();
 
-    return NextResponse.json({
-      success: true,
-      message: 'Kontrak borongan berhasil dicatat',
-      data: { id: result.insertId, house_id, kepala_tukang_id, work_name: work_name.trim(), contract_value: Number(contract_value) }
-    }, { status: 201 });
+      const [result] = await connection.execute(
+        'INSERT INTO borongan_contracts (house_id, kepala_tukang_id, work_name, contract_value, status) VALUES (?, ?, ?, ?, ?)',
+        [house_id, kepala_tukang_id, work_name.trim(), Number(contract_value), status || 'Lunas']
+      );
+      const contractId = result.insertId;
+
+      await connection.execute(
+        'INSERT INTO borongan_payments (contract_id, payment_date, amount, description) VALUES (?, ?, ?, ?)',
+        [contractId, new Date().toISOString().split('T')[0], Number(contract_value), 'Lunas (Otomatis)']
+      );
+
+      await connection.commit();
+      connection.release();
+
+      return NextResponse.json({
+        success: true,
+        message: 'Kontrak borongan lunas berhasil dicatat',
+        data: { id: contractId, house_id, kepala_tukang_id, work_name: work_name.trim(), contract_value: Number(contract_value) }
+      }, { status: 201 });
+    } catch(err) {
+      if (connection) {
+        await connection.rollback();
+        connection.release();
+      }
+      throw err;
+    }
   } catch (error) {
     console.error('Error creating borongan contract:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

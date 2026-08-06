@@ -4,8 +4,10 @@ import React, { useState, useEffect } from 'react';
 import { Users2, Plus, Wallet, CheckCircle2, Clock, AlertCircle, Loader2, X, RefreshCw, HardHat, Home } from 'lucide-react';
 import Pagination from '@/components/Pagination';
 import SearchableSelect from '@/components/SearchableSelect';
+import { useToast } from '@/components/ToastContext';
 
 export default function BoronganPage() {
+  const { showToast } = useToast();
   const [contracts, setContracts] = useState([]);
   const [houses, setHouses] = useState([]);
   const [kepalaTukangs, setKepalaTukangs] = useState([]);
@@ -16,7 +18,6 @@ export default function BoronganPage() {
 
   // Modals
   const [showContractModal, setShowContractModal] = useState(false);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedContract, setSelectedContract] = useState(null);
 
   const [contractForm, setContractForm] = useState({
@@ -24,12 +25,6 @@ export default function BoronganPage() {
     kepala_tukang_id: '',
     work_name: '',
     contract_value: ''
-  });
-
-  const [paymentForm, setPaymentForm] = useState({
-    payment_date: new Date().toISOString().split('T')[0],
-    amount: '',
-    description: 'Pembayaran Termin 1'
   });
 
   const [submitting, setSubmitting] = useState(false);
@@ -70,13 +65,12 @@ export default function BoronganPage() {
   const handleCreateContract = async (e) => {
     e.preventDefault();
     if (!contractForm.house_id || !contractForm.kepala_tukang_id || !contractForm.work_name || !contractForm.contract_value) {
-      setModalError('Unit Rumah, Kepala Tukang, Nama Pekerjaan, dan Nilai Kontrak wajib diisi');
+      showToast('Unit Rumah, Kepala Tukang, Nama Pekerjaan, dan Nilai Kontrak wajib diisi', 'error');
       return;
     }
 
     try {
       setSubmitting(true);
-      setModalError(null);
       const res = await fetch('/api/borongan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -85,53 +79,20 @@ export default function BoronganPage() {
       const json = await res.json();
       if (json.success) {
         setShowContractModal(false);
+        showToast('Kontrak borongan berhasil dibuat', 'success');
         setContractForm({ house_id: houses.length > 0 ? houses[0].id : '', kepala_tukang_id: kepalaTukangs.length > 0 ? kepalaTukangs[0].id : '', work_name: '', contract_value: '' });
         fetchData();
       } else {
-        setModalError(json.error || 'Gagal membuat kontrak borongan');
+        showToast(json.error || 'Gagal membuat kontrak borongan', 'error');
       }
     } catch (err) {
-      setModalError('Terjadi kesalahan koneksi');
+      showToast('Terjadi kesalahan koneksi', 'error');
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleCreatePayment = async (e) => {
-    e.preventDefault();
-    if (!selectedContract || !paymentForm.payment_date || !paymentForm.amount) {
-      setModalError('Tanggal dan Jumlah Bayar wajib diisi');
-      return;
-    }
-
-    try {
-      setSubmitting(true);
-      setModalError(null);
-      const payload = {
-        contract_id: selectedContract.id,
-        payment_date: paymentForm.payment_date,
-        amount: Number(paymentForm.amount),
-        description: paymentForm.description
-      };
-      const res = await fetch('/api/borongan/payments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const json = await res.json();
-      if (json.success) {
-        setShowPaymentModal(false);
-        setPaymentForm({ payment_date: new Date().toISOString().split('T')[0], amount: '', description: 'Pembayaran Termin' });
-        fetchData();
-      } else {
-        setModalError(json.error || 'Gagal mencatat pembayaran');
-      }
-    } catch (err) {
-      setModalError('Terjadi kesalahan koneksi');
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  // handleCreatePayment removed
 
   const formatRupiah = (number) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(number || 0);
@@ -152,7 +113,7 @@ export default function BoronganPage() {
             <span>Manajemen Kontrak & Upah Borongan</span>
           </h2>
           <p className="text-xs text-slate-500 mt-1">
-            Kelola kesepakatan upah borongan dengan Kepala Tukang/Mandor, bayar termin, dan pantau sisa tagihan.
+            Kelola kesepakatan upah borongan dengan Kepala Tukang/Mandor. Kontrak dicatat secara lunas.
           </p>
         </div>
         <button
@@ -181,9 +142,7 @@ export default function BoronganPage() {
                     <th className="py-3.5 px-6">Unit Rumah</th>
                     <th className="py-3.5 px-6">Kepala Tukang</th>
                     <th className="py-3.5 px-6 text-right">Nilai Kontrak</th>
-                    <th className="py-3.5 px-6 text-right">Terbayar (Termin)</th>
-                    <th className="py-3.5 px-6 text-right">Sisa Utang</th>
-                    <th className="py-3.5 px-6 text-center">Aksi Bayar</th>
+                    <th className="py-3.5 px-6">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-sm">
@@ -208,31 +167,10 @@ export default function BoronganPage() {
                           <td className="py-4 px-6 text-right font-bold text-slate-800">
                             {formatRupiah(c.contract_value)}
                           </td>
-                          <td className="py-4 px-6 text-right font-bold text-purple-600">
-                            {formatRupiah(c.total_paid)}
-                          </td>
-                          <td className="py-4 px-6 text-right font-extrabold text-red-600">
-                            {formatRupiah(rem)}
-                          </td>
                           <td className="py-4 px-6 text-center">
-                            {rem <= 0 || c.status === 'Selesai' ? (
-                              <span className="px-2.5 py-1 bg-slate-100 text-slate-500 rounded-lg text-xs font-bold border border-slate-200">
-                                Lunas / Selesai
-                              </span>
-                            ) : (
-                              <button
-                                onClick={() => {
-                                  setSelectedContract(c);
-                                  setModalError(null);
-                                  setPaymentForm({ payment_date: new Date().toISOString().split('T')[0], amount: rem > 0 ? rem : '', description: `Pembayaran Termin - ${c.work_name}` });
-                                  setShowPaymentModal(true);
-                                }}
-                                className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg text-xs font-bold border border-emerald-200 transition flex items-center justify-center gap-1 mx-auto"
-                              >
-                                <Wallet className="w-3.5 h-3.5" />
-                                <span>Bayar Termin</span>
-                              </button>
-                            )}
+                            <span className="px-2.5 py-1 bg-emerald-100 text-emerald-700 rounded-lg text-xs font-bold border border-emerald-200 whitespace-nowrap">
+                              Lunas / Selesai
+                            </span>
                           </td>
                         </tr>
                       );
@@ -343,78 +281,7 @@ export default function BoronganPage() {
         </div>
       )}
 
-      {/* Modal Bayar Termin Borongan */}
-      {showPaymentModal && selectedContract && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-2xl border border-slate-200 max-w-md w-full p-6 shadow-2xl relative">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-              <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
-                <Wallet className="w-5 h-5 text-emerald-600" />
-                <span>Pembayaran Termin Borongan</span>
-              </h3>
-              <button onClick={() => setShowPaymentModal(false)} className="p-1 rounded-lg hover:bg-slate-100 text-slate-400">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
 
-            <form onSubmit={handleCreatePayment} className="mt-4 space-y-4">
-              {modalError && <div className="p-3 bg-red-50 text-red-700 rounded-xl text-xs font-medium">{modalError}</div>}
-
-              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1 text-xs">
-                <p><span className="text-slate-400">Kontrak:</span> <strong className="text-slate-800">{selectedContract.work_name}</strong></p>
-                <p><span className="text-slate-400">Unit:</span> <strong className="text-blue-700">Blok {selectedContract.block_number}</strong> ({selectedContract.kepala_tukang_name})</p>
-                <p><span className="text-slate-400">Sisa Utang:</span> <strong className="text-red-600">{formatRupiah(Number(selectedContract.contract_value) - Number(selectedContract.total_paid))}</strong></p>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Tanggal Pembayaran <span className="text-red-500">*</span></label>
-                <input
-                  type="date"
-                  value={paymentForm.payment_date}
-                  onChange={(e) => setPaymentForm({ ...paymentForm, payment_date: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-emerald-500"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Jumlah Bayar Termin (Rp) <span className="text-red-500">*</span></label>
-                <input
-                  type="text"
-                  placeholder="Contoh: 5.000.000"
-                  value={paymentForm.amount ? Number(paymentForm.amount).toLocaleString('id-ID') : ''}
-                  onChange={(e) => {
-                    const val = Number(e.target.value.replace(/\D/g, ''));
-                    const maxVal = Number(selectedContract.contract_value) - Number(selectedContract.total_paid);
-                    setPaymentForm({ ...paymentForm, amount: val > maxVal ? maxVal.toString() : val.toString() });
-                  }}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-bold focus:ring-2 focus:ring-emerald-500"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Keterangan / Termin</label>
-                <input
-                  type="text"
-                  placeholder="Contoh: Pembayaran Termin 1 (Progres 50%)"
-                  value={paymentForm.description}
-                  onChange={(e) => setPaymentForm({ ...paymentForm, description: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2.5">
-                <button type="button" onClick={() => setShowPaymentModal(false)} className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold">Batal</button>
-                <button type="submit" disabled={submitting} className="px-5 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md">
-                  {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  <span>Simpan Pembayaran Termin</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

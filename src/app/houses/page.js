@@ -22,8 +22,10 @@ import {
 } from 'lucide-react';
 import Pagination from '@/components/Pagination';
 import SearchableSelect from '@/components/SearchableSelect';
+import { useToast } from '@/components/ToastContext';
 
 function HousesContent() {
+  const { showToast } = useToast();
   const searchParams = useSearchParams();
   const initialProjectId = searchParams.get('project_id') || '';
 
@@ -35,6 +37,7 @@ function HousesContent() {
 
   // Filters
   const [selectedProject, setSelectedProject] = useState(initialProjectId);
+  const [selectedStatus, setSelectedStatus] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
@@ -108,14 +111,13 @@ function HousesContent() {
 
   const handleCreateHouse = async (e) => {
     e.preventDefault();
-    if (!formData.project_id || !formData.block_number.trim() || !formData.type.trim()) {
-      setModalError('Proyek, Nomor Blok, dan Tipe Rumah wajib diisi');
+    if (!formData.project_id || !formData.block_number.trim()) {
+      showToast('Proyek dan Nomor Blok wajib diisi', 'error');
       return;
     }
 
     try {
       setSubmitting(true);
-      setModalError(null);
       const res = await fetch('/api/houses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -124,6 +126,7 @@ function HousesContent() {
       const json = await res.json();
       if (json.success) {
         setShowModal(false);
+        showToast('Unit rumah berhasil ditambahkan', 'success');
         setFormData({
           project_id: selectedProject || (projects.length > 0 ? projects[0].id : ''),
           block_number: '',
@@ -133,10 +136,10 @@ function HousesContent() {
         });
         fetchHouses();
       } else {
-        setModalError(json.error || 'Gagal menambahkan unit rumah');
+        showToast(json.error || 'Gagal menambahkan unit rumah', 'error');
       }
     } catch (err) {
-      setModalError('Terjadi kesalahan koneksi saat menyimpan unit');
+      showToast('Terjadi kesalahan koneksi saat menyimpan unit', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -149,12 +152,13 @@ function HousesContent() {
       const res = await fetch(`/api/houses/${id}`, { method: 'DELETE' });
       const json = await res.json();
       if (json.success) {
+        showToast('Unit rumah berhasil dihapus', 'success');
         fetchHouses();
       } else {
-        alert(json.error || 'Gagal menghapus unit rumah');
+        showToast(json.error || 'Gagal menghapus unit rumah', 'error');
       }
     } catch (err) {
-      alert('Terjadi kesalahan koneksi saat menghapus unit');
+      showToast('Terjadi kesalahan koneksi saat menghapus unit', 'error');
     }
   };
 
@@ -171,23 +175,27 @@ function HousesContent() {
   const handleUpdateStatus = async (e) => {
     e.preventDefault();
     if (!selectedHouseForEdit) return;
-    setEditSubmitting(true);
-    setEditError(null);
+    
     try {
+      setEditSubmitting(true);
       const res = await fetch(`/api/houses/${selectedHouseForEdit.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editFormData)
+        body: JSON.stringify({
+          status: editFormData.status,
+          progress_percent: Number(editFormData.progress_percent)
+        })
       });
       const json = await res.json();
       if (json.success) {
         setShowEditModal(false);
+        showToast('Status rumah berhasil diperbarui', 'success');
         fetchHouses();
       } else {
-        setEditError(json.error || 'Gagal memperbarui status unit rumah');
+        showToast(json.error || 'Gagal memperbarui status', 'error');
       }
     } catch (err) {
-      setEditError('Terjadi kesalahan saat memperbarui status unit rumah');
+      showToast('Terjadi kesalahan koneksi', 'error');
     } finally {
       setEditSubmitting(false);
     }
@@ -201,15 +209,17 @@ function HousesContent() {
     }).format(number || 0);
   };
 
-  const filteredHouses = houses.filter(h => 
-    h.block_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    h.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    h.project_name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredHouses = houses.filter(h => {
+    const matchSearch = h.block_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        h.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        h.project_name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchStatus = selectedStatus ? h.status === selectedStatus : true;
+    return matchSearch && matchStatus;
+  });
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedProject]);
+  }, [searchQuery, selectedProject, selectedStatus]);
 
   const paginatedHouses = filteredHouses.slice(
     (currentPage - 1) * itemsPerPage,
@@ -254,6 +264,17 @@ function HousesContent() {
             {projects.map(p => (
               <option key={p.id} value={p.id}>{p.name}</option>
             ))}
+          </select>
+          <select
+            value={selectedStatus}
+            onChange={(e) => setSelectedStatus(e.target.value)}
+            className="px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-48"
+          >
+            <option value="">Semua Status</option>
+            <option value="Belum Mulai">Belum Mulai</option>
+            <option value="Pembangunan">Pembangunan Aktif</option>
+            <option value="Selesai">Selesai</option>
+            <option value="Serah Terima">Serah Terima</option>
           </select>
         </div>
 
@@ -326,7 +347,7 @@ function HousesContent() {
                         </div>
 
                         <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-xs">
-                          <span className="text-slate-600 font-medium">Aktual Material (FIFO+Bypass)</span>
+                          <span className="text-slate-600 font-medium">Material Terkirim</span>
                           <span className="font-bold text-blue-600">{formatRupiah(house.actual_material_cost)}</span>
                         </div>
 
@@ -460,7 +481,7 @@ function HousesContent() {
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                    Tipe Rumah <span className="text-red-500">*</span>
+                    Tipe Rumah
                   </label>
                   <SearchableSelect
                     options={rabTemplates.map(t => ({
@@ -473,7 +494,7 @@ function HousesContent() {
                     placeholder="-- Pilih Tipe Rumah --"
                     searchPlaceholder="Ketik untuk mencari atau membuat baru..."
                     allowCustom={true}
-                    required={true}
+                    required={false}
                   />
                 </div>
               </div>

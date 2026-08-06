@@ -2,8 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { HardHat, Plus, Phone, Users2, Loader2, X, RefreshCw } from 'lucide-react';
+import { useToast } from '@/components/ToastContext';
 
 export default function KepalaTukangPage() {
+  const { showToast } = useToast();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -35,13 +37,12 @@ export default function KepalaTukangPage() {
   const handleCreate = async (e) => {
     e.preventDefault();
     if (!formData.name.trim()) {
-      setModalError('Nama Kepala Tukang wajib diisi');
+      showToast('Nama Kepala Tukang wajib diisi', 'error');
       return;
     }
 
     try {
       setSubmitting(true);
-      setModalError(null);
       const res = await fetch('/api/kepala-tukang', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -50,13 +51,14 @@ export default function KepalaTukangPage() {
       const json = await res.json();
       if (json.success) {
         setShowModal(false);
+        showToast('Kepala Tukang berhasil ditambahkan', 'success');
         setFormData({ name: '', phone: '' });
         fetchData();
       } else {
-        setModalError(json.error || 'Gagal menambah kepala tukang');
+        showToast(json.error || 'Gagal menambah kepala tukang', 'error');
       }
     } catch (err) {
-      setModalError('Terjadi kesalahan koneksi');
+      showToast('Terjadi kesalahan koneksi', 'error');
     } finally {
       setSubmitting(false);
     }

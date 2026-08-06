@@ -63,8 +63,8 @@ export async function POST(request) {
       if (destType === 'Gudang') {
         // Add to warehouse stock
         await connection.execute(
-          'UPDATE warehouse_stocks SET quantity = quantity + ? WHERE material_id = ?',
-          [qty, item.material_id]
+          'INSERT INTO warehouse_stocks (material_id, quantity) VALUES (?, ?) ON CONFLICT(material_id) DO UPDATE SET quantity = quantity + ?',
+          [item.material_id, qty, qty]
         );
 
         // Log mutation Beli-Gudang
@@ -73,7 +73,12 @@ export async function POST(request) {
           [item.material_id, 'Beli-Gudang', qty, priceUnit, purchase_date, purchaseItemId]
         );
       } else if (destType === 'Rumah' && houseId) {
-        // Bypass warehouse, allocate directly to house
+        // Bypass warehouse, allocate directly to house stock
+        await connection.execute(
+          'INSERT INTO house_materials (house_id, material_id, stock_quantity) VALUES (?, ?, ?) ON CONFLICT(house_id, material_id) DO UPDATE SET stock_quantity = stock_quantity + ?',
+          [houseId, item.material_id, qty, qty]
+        );
+
         await connection.execute(
           'INSERT INTO material_mutations (material_id, type, quantity, destination_house_id, price_unit, mutation_date, reference_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
           [item.material_id, 'Beli-Rumah', qty, houseId, priceUnit, purchase_date, purchaseItemId]

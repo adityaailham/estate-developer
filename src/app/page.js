@@ -123,11 +123,11 @@ export default function DashboardPage() {
             </div>
             <div>
               <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                <span>Peringatan Stok Gudang Utama (Opsi A)</span>
+                <span>Peringatan Stok Gudang Utama</span>
                 <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-700 text-[10px] font-extrabold">{low_stock_alerts.length} Item Kritis</span>
               </h4>
               <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-                Beberapa material di Gudang Global berada di bawah batas minimum pemesanan (`minimum_stock`). Segera lakukan pemesanan ulang ke supplier.
+                Beberapa material di Gudang Global berada di bawah batas minimum pemesanan. Segera lakukan pemesanan ulang ke supplier.
               </p>
             </div>
           </div>
@@ -310,7 +310,7 @@ export default function DashboardPage() {
         <div className="p-6 border-b border-slate-100 flex items-center justify-between">
           <div>
             <h3 className="font-bold text-slate-900 text-base">Aktivitas Mutasi Material Terbaru</h3>
-            <p className="text-xs text-slate-500">Log transaksi masuk, keluar FIFO, retur, dan bypass ke unit rumah</p>
+            <p className="text-xs text-slate-500">Log transaksi masuk, keluar, retur, dan kirim langsung ke unit rumah</p>
           </div>
           <Link href="/mutations" className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1">
             <span>Lihat Semua Log</span>

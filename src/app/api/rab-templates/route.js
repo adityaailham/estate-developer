@@ -54,7 +54,7 @@ export async function POST(request) {
     if (Array.isArray(items) && items.length > 0) {
       for (const item of items) {
         await connection.execute(
-          'INSERT INTO rab_template_items (rab_template_id, item_type, material_id, name, quantity, unit, estimated_price) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          'INSERT INTO rab_template_items (rab_template_id, item_type, material_id, name, quantity, unit, estimated_price, phase) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
           [
             templateId,
             item.item_type || 'Material',
@@ -62,7 +62,8 @@ export async function POST(request) {
             item.name.trim(),
             item.quantity || 0,
             item.unit.trim(),
-            item.estimated_price || 0
+            item.estimated_price || 0,
+            item.phase || 'Umum'
           ]
         );
       }

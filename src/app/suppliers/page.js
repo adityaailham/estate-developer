@@ -2,8 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { Truck, Plus, Phone, MapPin, Loader2, X, RefreshCw } from 'lucide-react';
+import { useToast } from '@/components/ToastContext';
 
 export default function SuppliersPage() {
+  const { showToast } = useToast();
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -35,13 +37,12 @@ export default function SuppliersPage() {
   const handleCreate = async (e) => {
     e.preventDefault();
     if (!formData.name.trim()) {
-      setModalError('Nama supplier wajib diisi');
+      showToast('Nama supplier wajib diisi', 'error');
       return;
     }
 
     try {
       setSubmitting(true);
-      setModalError(null);
       const res = await fetch('/api/suppliers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -50,13 +51,14 @@ export default function SuppliersPage() {
       const json = await res.json();
       if (json.success) {
         setShowModal(false);
+        showToast('Supplier berhasil ditambahkan', 'success');
         setFormData({ name: '', phone: '', address: '' });
         fetchSuppliers();
       } else {
-        setModalError(json.error || 'Gagal menambah supplier');
+        showToast(json.error || 'Gagal menambah supplier', 'error');
       }
     } catch (err) {
-      setModalError('Terjadi kesalahan koneksi');
+      showToast('Terjadi kesalahan koneksi', 'error');
     } finally {
       setSubmitting(false);
     }

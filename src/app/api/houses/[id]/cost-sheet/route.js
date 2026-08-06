@@ -100,6 +100,16 @@ export async function GET(request, { params }) {
       LIMIT 10
     `, [id, id]);
 
+    // 6. Fetch raw usage logs for Coefficient Analysis
+    const usageLogs = await query(`
+      SELECT u.id, u.phase, u.usage_date, u.work_volume, u.work_unit, 
+             u.material_id, m.name as material_name, m.unit as material_unit, u.quantity_used
+      FROM material_usage_logs u
+      JOIN materials m ON u.material_id = m.id
+      WHERE u.house_id = ?
+      ORDER BY u.usage_date ASC, u.id ASC
+    `, [id]);
+
     return NextResponse.json({
       success: true,
       data: {
@@ -119,7 +129,8 @@ export async function GET(request, { params }) {
         target_labor_items: targetLaborItems,
         actual_materials: actualMaterialList,
         labor_contracts: laborContracts,
-        recent_mutations: recentMutations
+        recent_mutations: recentMutations,
+        usage_logs: usageLogs
       }
     });
   } catch (error) {
