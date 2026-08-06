@@ -48,3 +48,8 @@ panduan_pengguna_dan_sistem.md
 # Agent & Skills
 .agents/
 skills-lock.json
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
