@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Boxes, Edit, X, RefreshCw, CheckCircle2, AlertTriangle, Loader2, Plus, Trash2 } from 'lucide-react';
+import SearchableSelect from '@/components/SearchableSelect';
 
 export default function MaterialOpname({ houseId, view = 'pemakaian', onSuccess }) {
   const [siteStock, setSiteStock] = useState([]);
@@ -57,6 +58,16 @@ export default function MaterialOpname({ houseId, view = 'pemakaian', onSuccess 
     }
   };
 
+  const handlePhaseChange = (val) => {
+    let newUnit = formHeader.work_unit;
+    // Cari apakah tahapan ini sebelumnya sudah pernah dicatat dengan satuan tertentu
+    const lastUsage = logs.find(log => log.log_type === 'Pemakaian' && log.phase === val && log.work_unit);
+    if (lastUsage) {
+      newUnit = lastUsage.work_unit;
+    }
+    setFormHeader({ ...formHeader, phase: val, work_unit: newUnit });
+  };
+
   const handleItemChange = (idx, field, value) => {
     const updated = [...formItems];
     updated[idx][field] = value;
@@ -93,17 +104,25 @@ export default function MaterialOpname({ houseId, view = 'pemakaian', onSuccess 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      const json = await res.json();
+      const text = await res.text();
+      let json = {};
+      try {
+        json = JSON.parse(text);
+      } catch (e) {
+        setModalError(`Server Error (${res.status}): ${text.replace(/<[^>]*>?/gm, '').substring(0, 200)}`);
+        return;
+      }
+
       if (json.success) {
         setShowModal(false);
         setFormItems([{ material_id: '', quantity: '', notes: '' }]);
         fetchData();
         if (onSuccess) onSuccess();
       } else {
-        setModalError(json.error);
+        setModalError(json.error || 'Gagal menyimpan pemakaian.');
       }
     } catch (err) {
-      setModalError('Terjadi kesalahan.');
+      setModalError(err.message || 'Terjadi kesalahan.');
     } finally {
       setSubmitting(false);
     }
@@ -129,7 +148,10 @@ export default function MaterialOpname({ houseId, view = 'pemakaian', onSuccess 
       acc[phase][log.material_id].total_used += Number(log.quantity);
       return acc;
     }, {});
-  const usedStockGroups = Object.entries(usedStockByPhase).map(([phase, matsObj]) => [phase, Object.values(matsObj)]);
+  const usedStockGroups = Object.entries(usedStockByPhase).map(([phase, matsObj]) => [
+    phase, 
+    Object.values(matsObj).sort((a, b) => a.name.localeCompare(b.name))
+  ]);
   return (
     <div className="space-y-6 animate-fadeIn">
       {view === 'pemakaian' && (
@@ -147,13 +169,13 @@ export default function MaterialOpname({ houseId, view = 'pemakaian', onSuccess 
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
         <div className="bg-white rounded-2xl border border-slate-200/80 card-shadow overflow-hidden">
           <div className="flex items-center justify-between p-5 border-b border-slate-100 bg-slate-50/60">
             <h4 className="font-bold text-slate-900 text-sm">Stok Siap Pakai di Lapangan</h4>
           </div>
           {siteStock.length > 0 ? (
-            <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
+            <div className="overflow-x-auto max-h-100 overflow-y-auto">
               <table className="w-full text-left border-collapse">
                 <thead className="sticky top-0 bg-slate-50 z-10">
                   <tr className="border-b border-slate-200 text-slate-500 text-[11px] font-bold uppercase">
@@ -162,7 +184,7 @@ export default function MaterialOpname({ houseId, view = 'pemakaian', onSuccess 
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-xs">
-                  {siteStock.map(s => (
+                  {siteStock.slice().sort((a,b) => a.name.localeCompare(b.name)).map(s => (
                     <tr key={s.id} className="hover:bg-slate-50/50">
                       <td className="py-3 px-4 font-bold text-slate-800">
                         {s.name} <span className="text-slate-400 font-normal">({s.code})</span>
@@ -187,7 +209,7 @@ export default function MaterialOpname({ houseId, view = 'pemakaian', onSuccess 
             <h4 className="font-bold text-slate-900 text-sm">Material Terpakai (Kumulatif)</h4>
           </div>
           {usedStockGroups.length > 0 ? (
-            <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
+            <div className="overflow-x-auto max-h-100 overflow-y-auto">
               <table className="w-full text-left border-collapse">
                 <thead className="sticky top-0 bg-slate-50 z-10">
                   <tr className="border-b border-slate-200 text-slate-500 text-[11px] font-bold uppercase">
@@ -243,13 +265,13 @@ export default function MaterialOpname({ houseId, view = 'pemakaian', onSuccess 
             </span>
           </div>
           
-          <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
+          <div className="overflow-x-auto max-h-96 overflow-y-auto">
             <table className="w-full text-left border-collapse">
               <thead className="sticky top-0 bg-slate-50 z-10">
                 <tr className="border-b border-slate-200 text-slate-500 text-[11px] font-bold uppercase tracking-wider">
                   <th className="py-3.5 px-4 whitespace-nowrap">Tanggal</th>
                   <th className="py-3.5 px-4">Tipe</th>
-                  <th className="py-3.5 px-4 min-w-[200px]">Material & Deskripsi</th>
+                  <th className="py-3.5 px-4 min-w-50">Material & Deskripsi</th>
                   <th className="py-3.5 px-4 text-right">Jumlah</th>
                 </tr>
               </thead>
@@ -307,18 +329,15 @@ export default function MaterialOpname({ houseId, view = 'pemakaian', onSuccess 
                   </div>
                   <div>
                     <label className="block uppercase mb-1">Tahapan / Pekerjaan (Sesuai RAB)</label>
-                    <input 
-                      type="text"
-                      list="phaseOptions"
-                      value={formHeader.phase} 
-                      onChange={e=>setFormHeader({...formHeader, phase: e.target.value})} 
-                      className="w-full px-3 py-2 border rounded-xl" 
-                      placeholder="Ketik nama tahapan baru atau pilih..."
-                      required 
+                    <SearchableSelect
+                      options={phases.map(p => ({ value: p, label: p }))}
+                      value={formHeader.phase}
+                      onChange={handlePhaseChange}
+                      placeholder="Ketik nama tahapan atau pilih..."
+                      searchPlaceholder="Cari / ketik nama tahapan..."
+                      allowCustom={true}
+                      required={true}
                     />
-                    <datalist id="phaseOptions">
-                      {phases.map(p => <option key={p} value={p}>{p}</option>)}
-                    </datalist>
                   </div>
                 </div>
 
@@ -336,21 +355,20 @@ export default function MaterialOpname({ houseId, view = 'pemakaian', onSuccess 
                   </div>
                   <div>
                     <label className="block uppercase mb-1">Satuan Volume (Opsional)</label>
-                    <input 
-                      type="text"
-                      list="unitOptions"
-                      value={formHeader.work_unit} 
-                      onChange={e=>setFormHeader({...formHeader, work_unit: e.target.value})} 
-                      className="w-full px-3 py-2 border rounded-xl" 
-                      placeholder="Contoh: m, m2, m3, ttk..."
+                    <SearchableSelect
+                      options={[
+                        { value: 'm', label: 'Meter (m)' },
+                        { value: 'm2', label: 'Meter Persegi (m2)' },
+                        { value: 'm3', label: 'Meter Kubik (m3)' },
+                        { value: 'titik', label: 'Titik' },
+                        { value: 'unit', label: 'Unit' }
+                      ]}
+                      value={formHeader.work_unit}
+                      onChange={(val) => setFormHeader({...formHeader, work_unit: val})}
+                      placeholder="Pilih atau ketik satuan..."
+                      searchPlaceholder="Cari / ketik satuan..."
+                      allowCustom={true}
                     />
-                    <datalist id="unitOptions">
-                      <option value="m">Meter (m)</option>
-                      <option value="m2">Meter Persegi (m2)</option>
-                      <option value="m3">Meter Kubik (m3)</option>
-                      <option value="titik">Titik</option>
-                      <option value="unit">Unit</option>
-                    </datalist>
                   </div>
                 </div>
 

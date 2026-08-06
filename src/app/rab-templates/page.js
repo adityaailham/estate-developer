@@ -21,6 +21,8 @@ export default function RabTemplatesPage() {
   const [formPhases, setFormPhases] = useState([
     {
       phaseName: 'Umum',
+      work_volume: '',
+      work_unit: '',
       items: [{ item_type: 'Material', material_id: '', name: '', quantity: '', unit: 'Sak', estimated_price: '' }]
     }
   ]);
@@ -40,6 +42,8 @@ export default function RabTemplatesPage() {
         if (matJson.data.length > 0) {
           setFormPhases([{
             phaseName: 'Umum',
+            work_volume: '',
+            work_unit: '',
             items: [{
               item_type: 'Material',
               material_id: matJson.data[0].id,
@@ -138,6 +142,8 @@ export default function RabTemplatesPage() {
           flatItems.push({
             ...i,
             phase: pName,
+            work_volume: p.work_volume || null,
+            work_unit: p.work_unit || null,
             quantity: Number(i.quantity),
             estimated_price: Number(i.estimated_price)
           });
@@ -186,13 +192,20 @@ export default function RabTemplatesPage() {
         name: item.name,
         quantity: item.quantity,
         unit: item.unit,
-        estimated_price: item.estimated_price
+        estimated_price: item.estimated_price,
+        work_volume: item.work_volume,
+        work_unit: item.work_unit
       });
       return acc;
     }, {});
     
-    const mappedPhases = Object.keys(grouped).map(k => ({ phaseName: k, items: grouped[k] }));
-    if (mappedPhases.length === 0) mappedPhases.push({ phaseName: 'Umum', items: [] });
+    const mappedPhases = Object.keys(grouped).map(k => ({ 
+      phaseName: k, 
+      work_volume: grouped[k][0].work_volume || '',
+      work_unit: grouped[k][0].work_unit || '',
+      items: grouped[k] 
+    }));
+    if (mappedPhases.length === 0) mappedPhases.push({ phaseName: 'Umum', work_volume: '', work_unit: '', items: [] });
     
     setFormPhases(mappedPhases);
     setShowModal(true);
@@ -382,15 +395,39 @@ export default function RabTemplatesPage() {
                     <div key={pIdx} className="p-4 rounded-xl border border-slate-200 bg-slate-50 shadow-sm relative group">
                       {/* Phase Header */}
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 pb-3 border-b border-slate-200 gap-3">
-                        <div className="flex-1">
+                        <div className="flex-1 space-y-3">
                           <input
                             type="text"
-                            placeholder="Nama Tahapan/Bagian (Cth: Fondasi 80 meter)"
+                            placeholder="Nama Tahapan Pekerjaan (Cth: Fondasi)"
                             value={phase.phaseName}
                             onChange={(e) => handlePhaseNameChange(pIdx, e.target.value)}
-                            className="w-full sm:w-2/3 px-3 py-2 rounded-lg border border-slate-300 focus:border-blue-600 bg-white text-sm font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition"
+                            className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:border-blue-600 bg-white text-sm font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition"
                             required
                           />
+                          <div className="flex gap-3">
+                            <input
+                              type="number"
+                              placeholder="Target Volume (Opsional, Cth: 20)"
+                              value={phase.work_volume}
+                              onChange={(e) => {
+                                const newPhases = [...formPhases];
+                                newPhases[pIdx].work_volume = e.target.value;
+                                setFormPhases(newPhases);
+                              }}
+                              className="w-1/2 sm:w-1/3 px-3 py-1.5 rounded-lg border border-slate-300 text-xs focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                            />
+                            <input
+                              type="text"
+                              placeholder="Satuan (Opsional, Cth: m2)"
+                              value={phase.work_unit}
+                              onChange={(e) => {
+                                const newPhases = [...formPhases];
+                                newPhases[pIdx].work_unit = e.target.value;
+                                setFormPhases(newPhases);
+                              }}
+                              className="w-1/2 sm:w-1/3 px-3 py-1.5 rounded-lg border border-slate-300 text-xs focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                            />
+                          </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <button type="button" onClick={() => handleAddItem(pIdx, 'Material')} className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-xs font-bold hover:bg-blue-200 transition whitespace-nowrap">+ Material</button>

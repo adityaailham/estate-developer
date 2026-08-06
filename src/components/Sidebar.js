@@ -58,6 +58,23 @@ const navItems = [
 export default function Sidebar() {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  React.useEffect(() => {
+    setIsMounted(true);
+    const saved = localStorage.getItem('sidebar_collapsed');
+    if (saved === 'true') {
+      setIsCollapsed(true);
+    }
+  }, []);
+
+  const handleToggle = () => {
+    const newVal = !isCollapsed;
+    setIsCollapsed(newVal);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('sidebar_collapsed', newVal.toString());
+    }
+  };
 
   return (
     <aside className={`bg-slate-900 text-slate-300 flex flex-col h-screen sticky top-0 shrink-0 select-none shadow-2xl z-40 print:hidden transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${isCollapsed ? 'w-16' : 'w-64'}`}>
@@ -80,10 +97,9 @@ export default function Sidebar() {
         </div>
         
         <button 
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="p-2 rounded-lg hover:bg-slate-800/60 text-slate-400 hover:text-white transition-colors"
-        >
-          <Menu className="w-5 h-5" />
+          onClick={handleToggle}
+          className={`p-1.5 rounded-lg hover:bg-slate-700/50 text-slate-400 hover:text-white transition-colors duration-200 ${isCollapsed ? 'mx-auto' : ''}`}
+        ><Menu className="w-5 h-5" />
         </button>
       </div>
 

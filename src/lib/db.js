@@ -39,25 +39,38 @@ export async function getDbConnection() {
           inTransaction = true;
         },
         commit: async () => {
-          if (inTransaction) {
-            db.exec('COMMIT');
-            inTransaction = false;
+          try {
+            if (inTransaction) {
+              db.exec('COMMIT');
+              inTransaction = false;
+            }
+          } finally {
+            releaseLock();
           }
-          releaseLock();
         },
         rollback: async () => {
-          if (inTransaction) {
-            db.exec('ROLLBACK');
+          try {
+            if (inTransaction) {
+              db.exec('ROLLBACK');
+              inTransaction = false;
+            }
+          } catch (e) {
             inTransaction = false;
+          } finally {
+            releaseLock();
           }
-          releaseLock();
         },
         release: () => {
-          if (inTransaction) {
-            db.exec('ROLLBACK');
+          try {
+            if (inTransaction) {
+              db.exec('ROLLBACK');
+              inTransaction = false;
+            }
+          } catch (e) {
             inTransaction = false;
+          } finally {
+            releaseLock();
           }
-          releaseLock();
         },
         execute: async (sql, params = []) => {
           // Normalize to array

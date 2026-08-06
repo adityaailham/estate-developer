@@ -27,6 +27,8 @@ export async function GET(request, { params }) {
         'Dipakai untuk tahap: ' || u.phase as description,
         u.phase as phase,
         COALESCE(u.notes, '') as notes,
+        u.work_volume,
+        u.work_unit,
         u.created_at as created_at
       FROM material_usage_logs u
       JOIN materials m ON u.material_id = m.id
@@ -53,6 +55,8 @@ export async function GET(request, { params }) {
         END) as description,
         'Umum' as phase,
         '' as notes,
+        null as work_volume,
+        null as work_unit,
         mm.created_at
       FROM material_mutations mm
       JOIN materials m ON mm.material_id = m.id

@@ -36,7 +36,24 @@ export async function POST(request, { params }) {
 
     let totalBudget = 0;
 
-    // 3. Agregasi Material dari Pemakaian Aktual
+    // 3. Dapatkan Total Volume Progres per Phase
+    const [phaseVolumes] = await connection.execute(
+      `SELECT phase, MAX(work_unit) as work_unit, SUM(daily_vol) as total_volume
+       FROM (
+         SELECT phase, created_at, MAX(work_unit) as work_unit, MAX(work_volume) as daily_vol
+         FROM material_usage_logs
+         WHERE house_id = ? AND work_volume IS NOT NULL
+         GROUP BY phase, created_at
+       ) sub
+       GROUP BY phase`,
+       [houseId]
+    );
+    const volumeMap = {};
+    for (const pv of phaseVolumes) {
+      volumeMap[pv.phase] = { vol: pv.total_volume, unit: pv.work_unit };
+    }
+
+    // 4. Agregasi Material dari Pemakaian Aktual
     const [materialUsage] = await connection.execute(
       `SELECT u.phase, u.material_id, SUM(u.quantity_used) as total_qty, m.name, m.unit, m.default_price 
        FROM material_usage_logs u
@@ -48,12 +65,13 @@ export async function POST(request, { params }) {
 
     for (const mat of materialUsage) {
       const estimatedPrice = Number(mat.default_price);
+      const phaseVol = volumeMap[mat.phase] || { vol: null, unit: null };
 
       await connection.execute(
         `INSERT INTO rab_template_items 
-        (rab_template_id, item_type, phase, material_id, name, quantity, unit, estimated_price) 
-        VALUES (?, 'Material', ?, ?, ?, ?, ?, ?)`,
-        [newTemplateId, mat.phase || 'Umum', mat.material_id, mat.name, mat.total_qty, mat.unit, estimatedPrice]
+        (rab_template_id, item_type, phase, material_id, name, quantity, unit, estimated_price, work_volume, work_unit) 
+        VALUES (?, 'Material', ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [newTemplateId, mat.phase || 'Umum', mat.material_id, mat.name, mat.total_qty, mat.unit, estimatedPrice, phaseVol.vol, phaseVol.unit]
       );
     }
 

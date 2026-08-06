@@ -154,22 +154,11 @@ export default function HouseCostSheetPage({ params }) {
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
-          <div>
-            <div className="flex flex-wrap items-center gap-2.5">
-              <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-                Blok {house.block_number}
-              </h1>
-              <span className="px-3 py-1 rounded-lg bg-blue-50 text-blue-700 text-xs font-bold border border-blue-200">
-                {house.type}
-              </span>
-              <span className={`px-3 py-1 rounded-full text-xs font-extrabold border shadow-sm flex items-center gap-1.5 ${healthStyle}`}>
-                <HealthIcon className="w-3.5 h-3.5" />
-                <span>{summary.health_status}</span>
-              </span>
-            </div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-              Laporan Cost Sheet
-              <span className={`text-xs px-2.5 py-1 rounded-lg border font-bold ${
+          <div className="flex flex-col justify-center">
+            <div className="flex flex-wrap items-center gap-2 mb-1.5">
+              <span className="text-[11px] font-black text-blue-600 uppercase tracking-widest">Laporan Cost Sheet</span>
+              <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+              <span className={`text-[10px] px-2 py-0.5 rounded-md border font-bold ${
                 house.status === 'Belum Mulai' ? 'bg-slate-100 text-slate-600 border-slate-200' :
                 house.status === 'Pembangunan' ? 'bg-amber-50 text-amber-600 border-amber-200' :
                 house.status === 'Selesai' ? 'bg-blue-50 text-blue-600 border-blue-200' :
@@ -177,10 +166,19 @@ export default function HouseCostSheetPage({ params }) {
               }`}>
                 {house.status}
               </span>
-            </h1>
-            <p className="text-sm text-slate-500 font-medium mt-1">
-              Proyek <span className="font-bold text-slate-700">{house.project_name}</span> &bull; {house.type}
-            </p>
+              <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border flex items-center gap-1 ${healthStyle}`}>
+                <HealthIcon className="w-3 h-3" />
+                <span>{summary.health_status}</span>
+              </span>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-none">
+                Blok {house.block_number}
+              </h1>
+              <span className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 text-[11px] font-semibold border border-slate-200 mt-0.5">
+                {house.project_name} &bull; {house.type}
+              </span>
+            </div>
           </div>
         </div>
         
@@ -372,15 +370,27 @@ export default function HouseCostSheetPage({ params }) {
         )}
 
         {activeTab === 'coefficient' && (() => {
-          // Calculate Coefficients
+          // Calculate coefficients
+          const coefficientsByPhase = (usage_logs || []).reduce((acc, log) => {
+            const phase = log.phase || 'Umum';
+            if (!acc[phase]) acc[phase] = { volumes: {}, unit: '' };
+            
+            if (log.work_volume && log.work_unit) {
+              if (!acc[phase].volumes[log.created_at]) acc[phase].volumes[log.created_at] = 0;
+              acc[phase].volumes[log.created_at] = Number(log.work_volume);
+              acc[phase].unit = log.work_unit;
+            }
+            return acc;
+          }, {});
+
           const phasesMap = {};
-          usage_logs.forEach(log => {
+          (usage_logs || []).forEach(log => {
             const p = log.phase || 'Umum';
             if (!phasesMap[p]) {
               phasesMap[p] = { phase: p, volumeKeys: {}, volumeList: [], materials: {} };
             }
             if (log.work_volume > 0) {
-              const entryKey = `${log.usage_date}_${log.work_volume}`;
+              const entryKey = log.created_at;
               if (!phasesMap[p].volumeKeys[entryKey]) {
                 const newEntry = {
                   date: log.usage_date,
@@ -408,7 +418,14 @@ export default function HouseCostSheetPage({ params }) {
             const units = [...new Set(pd.volumeList.map(e => e.unit).filter(Boolean))].join(', ');
             const coeffs = Object.values(pd.materials)
               .map(m => ({ ...m, coeff: totalVolume > 0 ? (m.qty / totalVolume) : null }))
-              .filter(m => m.coeff !== null);
+              .filter(m => m.coeff !== null)
+              .sort((a, b) => a.name.localeCompare(b.name));
+
+            // Urutkan juga material di dalam masing-masing log riwayat
+            pd.volumeList.forEach(entry => {
+              entry.mats.sort((a, b) => a.name.localeCompare(b.name));
+            });
+
             return { phase: pd.phase, totalVolume, unit: units, coeffs, volumeList: pd.volumeList };
           }).filter(p => p.totalVolume > 0);
 
@@ -425,9 +442,9 @@ export default function HouseCostSheetPage({ params }) {
               </div>
               <div className="p-6">
                 {coefficientData.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
                     {coefficientData.map((data, idx) => (
-                      <div key={idx} className="border border-slate-200 rounded-xl overflow-hidden shadow-sm flex flex-col">
+                      <div key={idx} className="border border-slate-200 rounded-xl overflow-hidden shadow-sm flex flex-col bg-white">
                         <div className="bg-slate-50 border-b border-slate-200 p-4 shrink-0">
                           <h4 className="font-bold text-slate-800 text-sm uppercase tracking-wide">{data.phase}</h4>
                           <div className="mt-2 flex items-center justify-between">
@@ -455,8 +472,8 @@ export default function HouseCostSheetPage({ params }) {
                               {data.coeffs.map((mat, i) => (
                                 <tr key={i} className="hover:bg-slate-50/60 transition">
                                   <td className="px-4 py-3 font-semibold text-slate-700">{mat.name}</td>
-                                  <td className="px-4 py-3 text-right font-medium text-slate-600">{mat.qty.toFixed(2)} {mat.unit}</td>
-                                  <td className="px-4 py-3 text-right font-black text-emerald-600">{(mat.coeff).toFixed(2)}</td>
+                                  <td className="px-4 py-3 text-right font-medium text-slate-600">{Number(mat.qty.toFixed(2))} {mat.unit}</td>
+                                  <td className="px-4 py-3 text-right font-black text-emerald-600">{Number((mat.coeff).toFixed(2))}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -488,9 +505,9 @@ export default function HouseCostSheetPage({ params }) {
                                       <div key={mIdx} className="flex justify-between items-center text-slate-600 px-1 py-0.5 hover:bg-slate-50 rounded">
                                         <span className="truncate pr-2 font-medium">{m.name}</span>
                                         <div className="flex items-center gap-4 shrink-0">
-                                          <span className="text-right w-20">{m.qty} {m.unit}</span>
+                                          <span className="text-right w-20">{Number(m.qty.toFixed(2))} {m.unit}</span>
                                           <span className="font-black text-emerald-600 text-right w-16">
-                                            {entry.volume > 0 ? (m.qty / entry.volume).toFixed(2) : '-'}
+                                            {entry.volume > 0 ? Number((m.qty / entry.volume).toFixed(2)) : '-'}
                                           </span>
                                         </div>
                                       </div>
@@ -519,7 +536,7 @@ export default function HouseCostSheetPage({ params }) {
         })()}
 
         {activeTab === 'materials' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fadeIn">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start animate-fadeIn">
           {/* Left: Target Material RAB */}
           <div className="bg-white rounded-2xl border border-slate-200/80 card-shadow overflow-hidden">
             <div className="p-5 border-b border-slate-100 bg-slate-50/60 flex items-center justify-between">
@@ -559,11 +576,13 @@ export default function HouseCostSheetPage({ params }) {
                           <td colSpan="4" className="py-3.5 px-4">
                             <div className="flex items-center gap-2.5">
                               <div className="w-1.5 h-4 bg-blue-600 rounded-full"></div>
-                              <span className="font-black text-blue-900 text-xs uppercase tracking-[0.15em]">{phase}</span>
+                              <span className="font-black text-blue-900 text-xs uppercase tracking-[0.15em]">
+                                {phase} {phaseItems[0].work_volume && phaseItems[0].work_unit ? `(${Number(phaseItems[0].work_volume)} ${phaseItems[0].work_unit})` : ''}
+                              </span>
                             </div>
                           </td>
                         </tr>
-                        {phaseItems.map(item => (
+                        {phaseItems.sort((a,b) => a.name.localeCompare(b.name)).map(item => (
                           <tr key={item.id} className="hover:bg-slate-50/50">
                             <td className="py-3 px-4 font-bold text-slate-800">
                               {item.name} {item.material_code && <span className="text-slate-400 font-normal">({item.material_code})</span>}
@@ -617,7 +636,7 @@ export default function HouseCostSheetPage({ params }) {
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-xs">
                   {actual_materials.length > 0 ? (
-                    actual_materials.map((mat) => {
+                    actual_materials.slice().sort((a,b) => a.material_name.localeCompare(b.material_name)).map((mat) => {
                       const avgPrice = Number(mat.net_quantity) > 0 ? Number(mat.net_cost) / Number(mat.net_quantity) : 0;
                       return (
                         <tr key={mat.material_id} className="hover:bg-slate-50/50">

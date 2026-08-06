@@ -45,8 +45,8 @@ export async function POST(request, { params }) {
     // Insert new items from template
     for (const item of templateItems) {
       await connection.execute(
-        'INSERT INTO house_rab_items (house_rab_id, item_type, material_id, name, quantity, unit, estimated_price, phase) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        [houseRabId, item.item_type, item.material_id || null, item.name, item.quantity, item.unit, item.estimated_price, item.phase || 'Umum']
+        'INSERT INTO house_rab_items (house_rab_id, item_type, material_id, name, quantity, unit, estimated_price, phase, work_volume, work_unit) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [houseRabId, item.item_type, item.material_id || null, item.name, item.quantity, item.unit, item.estimated_price, item.phase || 'Umum', item.work_volume || null, item.work_unit || null]
       );
     }
 

@@ -63,10 +63,10 @@ export async function POST(request, { params }) {
     return NextResponse.json({ success: true, message: 'Pemakaian material berhasil dicatat' }, { status: 201 });
   } catch (error) {
     if (connection) {
-      await connection.rollback();
-      connection.release();
+      try { await connection.rollback(); } catch (e) {}
+      try { connection.release(); } catch (e) {}
     }
     console.error('Error logging material usage:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message || 'Gagal mencatat pemakaian' }, { status: 500 });
   }
 }
