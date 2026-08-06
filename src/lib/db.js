@@ -1,6 +1,8 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 
+import fs from 'fs';
+
 let db;
 let isLocked = false;
 const queue = [];
@@ -28,6 +30,24 @@ export async function getDbConnection() {
 
     db = new Database(dbPath);
     db.pragma('journal_mode = WAL');
+
+    // Initialize schema if database is empty
+    const hasProjects = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='projects'").get();
+    if (!hasProjects) {
+      console.log('Database empty! Initializing schema...');
+      try {
+        const schemaPath = path.join(process.cwd(), 'schema.sql');
+        if (fs.existsSync(schemaPath)) {
+          const schemaSql = fs.readFileSync(schemaPath, 'utf8');
+          db.exec(schemaSql);
+          console.log('Database initialized successfully.');
+        } else {
+          console.warn('schema.sql not found! Cannot initialize database.');
+        }
+      } catch (err) {
+        console.error('Failed to initialize database schema:', err);
+      }
+    }
 
     // Mock MySQL pool.getConnection()
     db.getConnection = async () => {
