@@ -447,10 +447,46 @@ export default function HouseCostSheetPage({ params }) {
                       <div key={idx} className="border border-slate-200 rounded-xl overflow-hidden shadow-sm flex flex-col bg-white">
                         <div className="bg-slate-50 border-b border-slate-200 p-4 shrink-0">
                           <h4 className="font-bold text-slate-800 text-sm uppercase tracking-wide">{data.phase}</h4>
-                          <div className="mt-2 flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-xs font-semibold text-emerald-700 bg-emerald-100/50 w-fit px-2.5 py-1 rounded-md border border-emerald-200">
-                              Total Progres: {data.totalVolume} {data.unit || 'satuan'}
-                            </div>
+                          <div className="mt-3 flex items-center justify-between">
+                            {(() => {
+                              const targetItems = target_material_items.filter(i => (i.phase || 'Umum') === data.phase);
+                              const targetVol = targetItems.length > 0 && targetItems[0].work_volume ? Number(targetItems[0].work_volume) : 0;
+                              const pct = targetVol > 0 ? Math.round((data.totalVolume / targetVol) * 100) : null;
+                              
+                              let badgeColor = 'text-emerald-800 bg-emerald-100/70 border-emerald-200';
+                              let dividerColor = 'text-emerald-300';
+                              let pctColor = '';
+                              let barColor = 'bg-emerald-400';
+                              
+                              if (pct === 100) {
+                                pctColor = 'text-emerald-700 font-black';
+                                barColor = 'bg-emerald-500';
+                              } else if (pct > 100) {
+                                badgeColor = 'text-rose-800 bg-rose-100/70 border-rose-200';
+                                dividerColor = 'text-rose-300';
+                                pctColor = 'text-rose-700 font-black';
+                                barColor = 'bg-rose-500';
+                              }
+
+                              return (
+                                <div className="flex flex-col gap-1.5">
+                                  <div className={`flex items-center gap-2 text-[11px] font-bold w-fit px-2.5 py-1 rounded-md border shadow-sm ${badgeColor}`}>
+                                    <span>Progres: {data.totalVolume} {data.unit || 'satuan'}</span>
+                                    {pct !== null && (
+                                      <>
+                                        <span className={dividerColor}>|</span>
+                                        <span className={pctColor}>{pct}%</span>
+                                      </>
+                                    )}
+                                  </div>
+                                  {pct !== null && (
+                                    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                      <div className={`h-full rounded-full ${barColor}`} style={{ width: `${Math.min(100, pct)}%` }}></div>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })()}
                             <button 
                               onClick={() => toggleCoeffDetail(data.phase)}
                               className="text-[10px] font-bold px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 transition shadow-sm"
@@ -479,20 +515,31 @@ export default function HouseCostSheetPage({ params }) {
                             </tbody>
                           </table>
                         </div>
-                        {expandedCoeffs[data.phase] && (
-                          <div className="bg-slate-50 p-4 border-t border-slate-200 animate-fadeIn shrink-0">
-                            <h5 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-3">Riwayat Log Progres</h5>
-                            <div className="space-y-3">
-                              {data.volumeList.map((entry, eIdx) => (
-                                <div key={eIdx} className="text-xs p-3 rounded-lg bg-white border border-slate-200 shadow-sm">
-                                  <div className="flex justify-between items-center mb-2 border-b border-slate-100 pb-2">
-                                    <span className="text-slate-500 font-bold">
-                                      {new Date(entry.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                    </span>
-                                    <span className="font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
-                                      +{entry.volume} {entry.unit}
-                                    </span>
-                                  </div>
+                        {expandedCoeffs[data.phase] && (() => {
+                          const targetItems = target_material_items.filter(i => (i.phase || 'Umum') === data.phase);
+                          const targetVol = targetItems.length > 0 && targetItems[0].work_volume ? Number(targetItems[0].work_volume) : 0;
+                          return (
+                            <div className="bg-slate-50 p-4 border-t border-slate-200 animate-fadeIn shrink-0">
+                              <h5 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-3">Riwayat Log Progres</h5>
+                              <div className="space-y-3">
+                                {data.volumeList.map((entry, eIdx) => {
+                                  const entryPct = targetVol > 0 ? Math.round((entry.volume / targetVol) * 100) : null;
+                                  return (
+                                    <div key={eIdx} className="text-xs p-3 rounded-lg bg-white border border-slate-200 shadow-sm">
+                                      <div className="flex justify-between items-center mb-2 border-b border-slate-100 pb-2">
+                                        <span className="text-slate-500 font-bold">
+                                          {new Date(entry.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                        </span>
+                                        <div className="font-black text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded-md border border-emerald-200 flex items-center gap-1.5">
+                                          <span>+{entry.volume} {entry.unit}</span>
+                                          {entryPct !== null && (
+                                            <>
+                                              <span className="text-emerald-300 font-normal">|</span>
+                                              <span className="text-emerald-700">+{entryPct}%</span>
+                                            </>
+                                          )}
+                                        </div>
+                                      </div>
                                   <div className="space-y-1">
                                     <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase border-b border-slate-50 pb-1 mb-1 px-1">
                                       <span>Material</span>
@@ -513,11 +560,13 @@ export default function HouseCostSheetPage({ params }) {
                                       </div>
                                     ))}
                                   </div>
-                                </div>
-                              ))}
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
-                        )}
+                        );
+                      })()}
                       </div>
                     ))}
                   </div>
@@ -574,11 +623,53 @@ export default function HouseCostSheetPage({ params }) {
                       <React.Fragment key={phase}>
                         <tr className="bg-blue-50/80 border-y border-blue-100/50">
                           <td colSpan="4" className="py-3.5 px-4">
-                            <div className="flex items-center gap-2.5">
-                              <div className="w-1.5 h-4 bg-blue-600 rounded-full"></div>
-                              <span className="font-black text-blue-900 text-xs uppercase tracking-[0.15em]">
-                                {phase} {phaseItems[0].work_volume && phaseItems[0].work_unit ? `(${Number(phaseItems[0].work_volume)} ${phaseItems[0].work_unit})` : ''}
-                              </span>
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-1.5 h-4 bg-blue-600 rounded-full"></div>
+                                <span className="font-black text-blue-900 text-xs uppercase tracking-[0.15em]">
+                                  {phase} {phaseItems[0].work_volume && phaseItems[0].work_unit ? `(${Number(phaseItems[0].work_volume)} ${phaseItems[0].work_unit})` : ''}
+                                </span>
+                              </div>
+                              {(() => {
+                                const targetVol = phaseItems[0].work_volume ? Number(phaseItems[0].work_volume) : 0;
+                                if (targetVol > 0) {
+                                  const phaseLogsMap = {};
+                                  (usage_logs || []).filter(l => (l.phase || 'Umum') === phase && Number(l.work_volume) > 0).forEach(l => {
+                                    phaseLogsMap[l.created_at] = Number(l.work_volume);
+                                  });
+                                  const actualVol = Object.values(phaseLogsMap).reduce((a, b) => a + b, 0);
+                                  const pct = Math.round((actualVol / targetVol) * 100);
+                                  const barPct = Math.min(100, pct);
+                                  
+                                  let textColor = 'text-blue-700';
+                                  let barColor = 'bg-linear-to-r from-blue-500 to-indigo-500';
+                                  if (pct === 100) {
+                                    textColor = 'text-emerald-600';
+                                    barColor = 'bg-emerald-500';
+                                  } else if (pct > 100) {
+                                    textColor = 'text-rose-600';
+                                    barColor = 'bg-rose-500';
+                                  }
+
+                                  return (
+                                    <div className="flex items-center gap-3">
+                                      <div className="flex flex-col items-end">
+                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Progres Fisik</span>
+                                        <span className={`text-xs font-black ${textColor}`}>
+                                          {pct}% <span className="font-medium text-slate-400">({actualVol}/{targetVol})</span>
+                                        </span>
+                                      </div>
+                                      <div className="w-24 sm:w-32 h-2.5 bg-white border border-slate-200 rounded-full overflow-hidden shadow-inner">
+                                        <div 
+                                          className={`h-full rounded-full transition-all duration-1000 ${barColor}`} 
+                                          style={{ width: `${barPct}%` }}
+                                        ></div>
+                                      </div>
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              })()}
                             </div>
                           </td>
                         </tr>
