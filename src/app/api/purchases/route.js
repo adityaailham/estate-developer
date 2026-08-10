@@ -5,11 +5,18 @@ export async function GET() {
   try {
     const purchases = await query(`
       SELECT p.*, s.name as supplier_name,
-             COUNT(pi.id) as total_items
+             COALESCE(item_aggs.total_items, 0) as total_items,
+             item_aggs.item_details
       FROM purchases p
       JOIN suppliers s ON p.supplier_id = s.id
-      LEFT JOIN purchase_items pi ON p.id = pi.purchase_id
-      GROUP BY p.id
+      LEFT JOIN (
+          SELECT pi.purchase_id, 
+                 COUNT(pi.id) as total_items,
+                 GROUP_CONCAT(m.name || ' (' || pi.quantity || ' ' || m.unit || ')', '||') as item_details
+          FROM purchase_items pi
+          LEFT JOIN materials m ON pi.material_id = m.id
+          GROUP BY pi.purchase_id
+      ) item_aggs ON p.id = item_aggs.purchase_id
       ORDER BY p.purchase_date DESC, p.created_at DESC
     `);
     return NextResponse.json({ success: true, data: purchases });

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Boxes, Edit, X, RefreshCw, CheckCircle2, AlertTriangle, Loader2, Plus, Trash2 } from 'lucide-react';
 import SearchableSelect from '@/components/SearchableSelect';
 
-export default function MaterialOpname({ houseId, view = 'pemakaian', onSuccess }) {
+export default function MaterialOpname({ houseId, houseStatus, view = 'pemakaian', onSuccess }) {
   const [siteStock, setSiteStock] = useState([]);
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -55,6 +55,8 @@ export default function MaterialOpname({ houseId, view = 'pemakaian', onSuccess 
   const handleRemoveItem = (idx) => {
     if (formItems.length > 1) {
       setFormItems(formItems.filter((_, i) => i !== idx));
+    } else {
+      setFormItems([{ material_id: '', quantity: '', notes: '' }]);
     }
   };
 
@@ -160,13 +162,15 @@ export default function MaterialOpname({ houseId, view = 'pemakaian', onSuccess 
             <h3 className="font-bold text-slate-800">
               Pemakaian Material (Kontrol Lapangan)
             </h3>
-            <button 
-              onClick={() => setShowModal(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 hover:bg-blue-700 transition flex items-center gap-2"
-            >
-              <Edit className="w-4 h-4" />
-              Catat Pemakaian
-            </button>
+            {houseStatus !== 'Selesai' && (
+              <button 
+                onClick={() => setShowModal(true)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 hover:bg-blue-700 transition flex items-center gap-2"
+              >
+                <Edit className="w-4 h-4" />
+                Catat Pemakaian
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
@@ -387,10 +391,17 @@ export default function MaterialOpname({ houseId, view = 'pemakaian', onSuccess 
                         <div key={idx} className="flex flex-col sm:flex-row gap-3 p-3 rounded-xl border border-slate-200 bg-slate-50 relative">
                           <div className="flex-1">
                             <label className="block uppercase mb-1 text-[10px]">Material</label>
-                            <select value={item.material_id} onChange={e=>handleItemChange(idx, 'material_id', e.target.value)} className="w-full px-3 py-2 border rounded-xl" required>
-                              <option value="">-- Pilih Material di Lapangan --</option>
-                              {siteStock.map(s => <option key={s.material_id} value={s.material_id}>{s.name} (Stok: {s.stock_quantity} {s.unit})</option>)}
-                            </select>
+                            <SearchableSelect
+                              options={siteStock.map(s => ({
+                                value: String(s.material_id),
+                                label: `${s.name} (Stok: ${s.stock_quantity} ${s.unit})`
+                              }))}
+                              value={String(item.material_id || '')}
+                              onChange={(val) => handleItemChange(idx, 'material_id', val)}
+                              placeholder="Ketik / Pilih Material..."
+                              searchPlaceholder="Cari material..."
+                              required={true}
+                            />
                           </div>
                           <div className="w-full sm:w-28">
                             <label className="block uppercase mb-1 text-[10px]">
@@ -404,12 +415,12 @@ export default function MaterialOpname({ houseId, view = 'pemakaian', onSuccess 
                               value={item.quantity} 
                               onChange={e=>handleItemChange(idx, 'quantity', e.target.value)} 
                               className="w-full px-3 py-2 border rounded-xl" 
-                              placeholder="0"
+                              placeholder=""
                               required 
                             />
                           </div>
                           <div className="w-full sm:w-48">
-                            <label className="block uppercase mb-1 text-[10px]">Catatan</label>
+                            <label className="block uppercase mb-1 text-[10px]">Catatan (Opsional)</label>
                             <input 
                               type="text" 
                               value={item.notes} 
@@ -419,13 +430,9 @@ export default function MaterialOpname({ houseId, view = 'pemakaian', onSuccess 
                             />
                           </div>
                           <div className="flex items-end justify-center pb-1">
-                            {formItems.length > 1 ? (
-                              <button type="button" onClick={() => handleRemoveItem(idx)} className="p-2 text-red-500 hover:bg-red-100 rounded-lg transition" title="Hapus baris">
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            ) : (
-                              <div className="w-8"></div>
-                            )}
+                            <button type="button" onClick={() => handleRemoveItem(idx)} className="p-2 text-red-500 hover:bg-red-100 rounded-lg transition" title={formItems.length > 1 ? "Hapus baris" : "Kosongkan baris"}>
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </div>
                         </div>
                        );

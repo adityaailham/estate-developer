@@ -151,6 +151,14 @@ export default function ProjectsPage() {
                 <div className="mt-5 space-y-3">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-slate-500 font-medium flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-slate-400" />
+                      Belum Mulai
+                    </span>
+                    <span className="font-bold text-slate-900">{proj.pending_houses || 0} unit</span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-500 font-medium flex items-center gap-1.5">
                       <TrendingUp className="w-3.5 h-3.5 text-blue-500" />
                       Aktif Pembangunan
                     </span>
@@ -177,6 +185,12 @@ export default function ProjectsPage() {
                       className="bg-blue-500 transition-all duration-500"
                       style={{
                         width: `${proj.total_houses > 0 ? ((proj.active_houses / proj.total_houses) * 100) : 0}%`
+                      }}
+                    />
+                    <div
+                      className="bg-slate-300 transition-all duration-500"
+                      style={{
+                        width: `${proj.total_houses > 0 ? ((proj.pending_houses / proj.total_houses) * 100) : 0}%`
                       }}
                     />
                   </div>

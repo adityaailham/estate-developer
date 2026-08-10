@@ -30,6 +30,7 @@ export default function MutationsPage() {
 
   // Modal State
   const [showModal, setShowModal] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState({ show: false, mut: null, loading: false });
   const [formData, setFormData] = useState({
     type: 'Keluar-Rumah',
     source_house_id: '',
@@ -219,19 +220,28 @@ export default function MutationsPage() {
     }
   };
 
-  const handleDeleteMutation = async (mut) => {
-    if (!confirm(`Batalkan transaksi mutasi ini dan kembalikan stok secara otomatis?`)) return;
+  const confirmDelete = (mut) => {
+    setDeleteConfirm({ show: true, mut, loading: false });
+  };
+
+  const executeDeleteMutation = async () => {
+    const mut = deleteConfirm.mut;
+    if (!mut) return;
     try {
+      setDeleteConfirm(prev => ({ ...prev, loading: true }));
       const res = await fetch(`/api/mutations/${mut.id}`, { method: 'DELETE' });
       const json = await res.json();
       if (json.success) {
         showToast('Mutasi berhasil dibatalkan dan stok disesuaikan', 'success');
+        setDeleteConfirm({ show: false, mut: null, loading: false });
         fetchData();
       } else {
         showToast('Gagal membatalkan: ' + (json.error || 'Terjadi kesalahan'), 'error');
+        setDeleteConfirm(prev => ({ ...prev, loading: false }));
       }
     } catch (err) {
       showToast('Terjadi kesalahan koneksi saat membatalkan mutasi', 'error');
+      setDeleteConfirm(prev => ({ ...prev, loading: false }));
     }
   };
 
@@ -464,7 +474,7 @@ export default function MutationsPage() {
                           </td>
                           <td className="py-3.5 px-6 text-center whitespace-nowrap print:hidden">
                             <button
-                              onClick={() => handleDeleteMutation(mut)}
+                              onClick={() => confirmDelete(mut)}
                               className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition"
                               title="Batalkan Mutasi & Rollback Stok"
                             >
@@ -706,14 +716,61 @@ export default function MutationsPage() {
                 </div>
               )}
 
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2.5">
-                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold">Batal</button>
-                <button type="submit" disabled={submitting} className="px-5 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md">
-                  {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  <span>Proses Mutasi & Alokasi FIFO</span>
+              <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="px-5 py-2.5 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 transition flex items-center gap-2 shadow-md shadow-blue-500/20"
+                >
+                  {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                  <span>{submitting ? 'Menyimpan...' : 'Simpan Mutasi'}</span>
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm.show && deleteConfirm.mut && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn print:hidden">
+          <div className="bg-white rounded-2xl border border-slate-200 max-w-sm w-full p-6 shadow-2xl relative">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mb-4">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <h3 className="font-bold text-slate-900 text-lg mb-2">Batalkan Mutasi?</h3>
+              <p className="text-sm text-slate-500 mb-6">
+                Apakah Anda yakin ingin membatalkan transaksi mutasi <strong>{deleteConfirm.mut.material_name}</strong> sejumlah <strong>{deleteConfirm.mut.quantity} {deleteConfirm.mut.unit}</strong>?
+                <br/><br/>
+                Stok material akan dikembalikan/disesuaikan secara otomatis.
+              </p>
+              
+              <div className="flex justify-center gap-3 w-full">
+                <button
+                  onClick={() => setDeleteConfirm({ show: false, mut: null, loading: false })}
+                  disabled={deleteConfirm.loading}
+                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={executeDeleteMutation}
+                  disabled={deleteConfirm.loading}
+                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold text-white bg-red-600 hover:bg-red-700 transition flex items-center justify-center gap-2 shadow-md shadow-red-500/20"
+                >
+                  {deleteConfirm.loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                  <span>{deleteConfirm.loading ? 'Memproses...' : 'Ya, Batalkan'}</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

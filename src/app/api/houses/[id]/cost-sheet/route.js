@@ -42,9 +42,11 @@ export async function GET(request, { params }) {
       targetLaborBudget = targetLaborItems.reduce((sum, i) => sum + Number(i.total_price), 0);
     }
 
-    // 3. Fetch Actual Material Expenditures breakdown by material
+    // 3. Fetch Actual Materials Used (Mutations Net)
     const actualMaterialList = await query(`
       SELECT m.id as material_id, m.code as material_code, m.name as material_name, m.unit,
+             COALESCE(SUM(CASE WHEN mm.destination_house_id = ? AND mm.type IN ('Beli-Rumah', 'Keluar-Rumah', 'Pindah-Rumah') THEN mm.quantity ELSE 0 END), 0) as total_in,
+             COALESCE(SUM(CASE WHEN mm.source_house_id = ? AND mm.type IN ('Retur-Gudang', 'Pindah-Rumah') THEN mm.quantity ELSE 0 END), 0) as total_out,
              COALESCE(SUM(CASE WHEN mm.destination_house_id = ? AND mm.type IN ('Beli-Rumah', 'Keluar-Rumah', 'Pindah-Rumah') THEN mm.quantity ELSE 0 END), 0) -
              COALESCE(SUM(CASE WHEN mm.source_house_id = ? AND mm.type IN ('Retur-Gudang', 'Pindah-Rumah') THEN mm.quantity ELSE 0 END), 0) as net_quantity,
              
@@ -54,9 +56,9 @@ export async function GET(request, { params }) {
       JOIN material_mutations mm ON m.id = mm.material_id
       WHERE mm.destination_house_id = ? OR mm.source_house_id = ?
       GROUP BY m.id, m.code, m.name, m.unit
-      HAVING net_quantity != 0 OR net_cost != 0
+      HAVING net_quantity != 0 OR net_cost != 0 OR total_in != 0
       ORDER BY m.name ASC
-    `, [id, id, id, id, id, id]);
+    `, [id, id, id, id, id, id, id, id]);
 
     const actualMaterialCost = actualMaterialList.reduce((sum, item) => sum + Number(item.net_cost), 0);
 

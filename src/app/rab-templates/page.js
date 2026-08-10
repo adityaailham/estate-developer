@@ -133,6 +133,12 @@ export default function RabTemplatesPage() {
       return;
     }
 
+    const missingPhase = formPhases.find(p => !p.work_volume || !String(p.work_volume).trim() || !p.work_unit || !p.work_unit.trim());
+    if (missingPhase) {
+      showToast(`Target Volume dan Satuan wajib diisi pada tahapan: ${missingPhase.phaseName || 'Tahapan Tanpa Nama'}`, 'error');
+      return;
+    }
+
     try {
       setSubmitting(true);
       let flatItems = [];
@@ -303,7 +309,9 @@ export default function RabTemplatesPage() {
                       <div key={phase} className="mb-4 last:mb-0">
                         <div className="flex items-center gap-2 mb-2 px-1">
                           <div className="w-1.5 h-3.5 bg-blue-600 rounded-full"></div>
-                          <span className="font-black text-blue-900 text-[11px] uppercase tracking-[0.15em]">{phase}</span>
+                          <span className="font-black text-blue-900 text-[11px] uppercase tracking-[0.15em]">
+                            {phase} {phaseItems[0].work_volume && phaseItems[0].work_unit ? `(${Number(phaseItems[0].work_volume)} ${phaseItems[0].work_unit})` : ''}
+                          </span>
                         </div>
                         <div className="space-y-1.5">
                           {phaseItems.map((item) => (
@@ -407,25 +415,27 @@ export default function RabTemplatesPage() {
                           <div className="flex gap-3">
                             <input
                               type="number"
-                              placeholder="Target Volume (Opsional, Cth: 20)"
-                              value={phase.work_volume}
+                              placeholder="Target Volume (Cth: 20)"
+                              value={phase.work_volume || ''}
                               onChange={(e) => {
                                 const newPhases = [...formPhases];
                                 newPhases[pIdx].work_volume = e.target.value;
                                 setFormPhases(newPhases);
                               }}
                               className="w-1/2 sm:w-1/3 px-3 py-1.5 rounded-lg border border-slate-300 text-xs focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                              required
                             />
                             <input
                               type="text"
-                              placeholder="Satuan (Opsional, Cth: m2)"
-                              value={phase.work_unit}
+                              placeholder="Satuan (Cth: m2)"
+                              value={phase.work_unit || ''}
                               onChange={(e) => {
                                 const newPhases = [...formPhases];
                                 newPhases[pIdx].work_unit = e.target.value;
                                 setFormPhases(newPhases);
                               }}
                               className="w-1/2 sm:w-1/3 px-3 py-1.5 rounded-lg border border-slate-300 text-xs focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                              required
                             />
                           </div>
                         </div>

@@ -18,6 +18,7 @@ import {
   FileText, 
   Loader2, 
   PlusCircle, 
+  Printer,
   RefreshCw,
   TrendingDown,
   ClipboardList,
@@ -144,13 +145,14 @@ export default function HouseCostSheetPage({ params }) {
     : 0;
 
   return (
-    <div className="space-y-8 animate-fadeIn pb-16">
+    <>
+    <div className="space-y-8 animate-fadeIn pb-16 print:hidden">
       {/* Top Header & Back */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 card-shadow">
         <div className="flex items-start gap-4">
           <Link
             href="/houses"
-            className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition shrink-0 mt-0.5"
+            className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition shrink-0 mt-0.5 print:hidden"
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
@@ -182,7 +184,7 @@ export default function HouseCostSheetPage({ params }) {
           </div>
         </div>
         
-        <div className="relative z-10 flex items-center gap-2">
+        <div className="relative z-10 flex flex-wrap items-center justify-end gap-2 print:hidden mt-4 lg:mt-0">
           <button 
             onClick={fetchCostSheet}
             className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition shrink-0"
@@ -190,30 +192,49 @@ export default function HouseCostSheetPage({ params }) {
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
-          <Link
-            href={`/mutations?house_id=${house.id}&type=Keluar-Rumah&action=new`}
-            className="flex-1 md:flex-none px-4 py-2.5 bg-linear-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 hover:from-blue-700 hover:to-indigo-700 transition flex items-center justify-center gap-1.5"
-          >
-            <PlusCircle className="w-4 h-4" />
-            <span>Masuk ke {house.block_number}</span>
-          </Link>
-          <Link
-            href={`/mutations?house_id=${house.id}&action=out`}
-            className="flex-1 md:flex-none px-4 py-2.5 bg-linear-to-r from-rose-500 to-red-600 text-white rounded-xl text-xs font-bold shadow-md shadow-red-500/20 hover:from-rose-600 hover:to-red-700 transition flex items-center justify-center gap-1.5"
-          >
-            <ArrowRightLeft className="w-4 h-4" />
-            <span>Mutasi Keluar</span>
-          </Link>
-          <button
-            onClick={() => setShowExportModal(true)}
-            disabled={exporting}
-            className="flex-1 md:flex-none px-4 py-2.5 bg-linear-to-r from-emerald-500 to-teal-600 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-500/20 hover:from-emerald-600 hover:to-teal-700 transition flex items-center justify-center gap-1.5"
-            title="Simpan total pengeluaran aktual ini menjadi Template RAB baku"
-          >
-            {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            <span className="hidden lg:inline">Jadikan Template RAB</span>
-            <span className="lg:hidden">RAB</span>
-          </button>
+          
+          {house.status !== 'Selesai' && (
+            <>
+              <Link
+                href={`/mutations?house_id=${house.id}&type=Keluar-Rumah&action=new`}
+                className="flex-1 md:flex-none px-4 py-2.5 bg-linear-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 hover:from-blue-700 hover:to-indigo-700 transition flex items-center justify-center gap-1.5 whitespace-nowrap"
+              >
+                <PlusCircle className="w-4 h-4 shrink-0" />
+                <span>Masuk ke {house.block_number}</span>
+              </Link>
+              <Link
+                href={`/mutations?house_id=${house.id}&action=out`}
+                className="flex-1 md:flex-none px-4 py-2.5 bg-linear-to-r from-rose-500 to-red-600 text-white rounded-xl text-xs font-bold shadow-md shadow-red-500/20 hover:from-rose-600 hover:to-red-700 transition flex items-center justify-center gap-1.5 whitespace-nowrap"
+              >
+                <ArrowRightLeft className="w-4 h-4 shrink-0" />
+                <span>Mutasi Keluar</span>
+              </Link>
+            </>
+          )}
+          {house.status === 'Selesai' && (
+            <>
+              <button
+                onClick={() => setShowExportModal(true)}
+                disabled={exporting}
+                className="flex-1 md:flex-none px-4 py-2.5 bg-linear-to-r from-emerald-500 to-teal-600 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-500/20 hover:from-emerald-600 hover:to-teal-700 transition flex items-center justify-center gap-1.5"
+                title="Simpan total pengeluaran aktual ini menjadi Template RAB baku"
+              >
+                {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                <span className="hidden lg:inline">Jadikan Template RAB</span>
+                <span className="lg:hidden">RAB</span>
+              </button>
+              
+              <button
+                onClick={() => window.print()}
+                className="flex-1 md:flex-none px-4 py-2.5 bg-linear-to-r from-purple-500 to-fuchsia-600 text-white rounded-xl text-xs font-bold shadow-md shadow-purple-500/20 hover:from-purple-600 hover:to-fuchsia-700 transition flex items-center justify-center gap-1.5"
+                title="Cetak Laporan Pembangunan"
+              >
+                <Printer className="w-4 h-4" />
+                <span className="hidden lg:inline">Cetak Laporan</span>
+                <span className="lg:hidden">Cetak</span>
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -292,12 +313,17 @@ export default function HouseCostSheetPage({ params }) {
                 {summary.variance_total >= 0 ? 'Hemat (Sisa anggaran tersedia)' : 'Melebihi target anggaran (Overbudget)'}
               </span>
             </p>
+            <p className="mt-2 text-[11px] font-medium text-slate-400">
+              {summary.variance_total >= 0 
+                ? 'Sisa anggaran yang berhasil dihemat (Surplus)' 
+                : 'Melebihi target anggaran (Overbudget)'}
+            </p>
           </div>
         </div>
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200/80 pb-2 overflow-x-auto">
+      <div className="flex items-center gap-2 border-b border-slate-200/80 pb-2 overflow-x-auto print:hidden">
         <button
           onClick={() => setActiveTab('materials')}
           className={`px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition-all whitespace-nowrap ${
@@ -307,31 +333,7 @@ export default function HouseCostSheetPage({ params }) {
           }`}
         >
           <Boxes className="w-4 h-4" />
-          <span>Breakdown Material ({target_material_items.length} Target / {actual_materials.length} Aktual)</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('opname')}
-          className={`px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition-all whitespace-nowrap ${
-            activeTab === 'opname'
-              ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
-              : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200/80'
-          }`}
-        >
-          <ClipboardList className="w-4 h-4" />
-          <span>Pemakaian Material</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('log')}
-          className={`px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition-all whitespace-nowrap ${
-            activeTab === 'log'
-              ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
-              : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200/80'
-          }`}
-        >
-          <History className="w-4 h-4" />
-          <span>Log Transaksi & Mutasi</span>
+          <span>Material</span>
         </button>
 
         <button
@@ -343,7 +345,7 @@ export default function HouseCostSheetPage({ params }) {
           }`}
         >
           <Users2 className="w-4 h-4" />
-          <span>Upah & Kontrak Borongan ({labor_contracts.length} Kontrak)</span>
+          <span>Upah Borongan</span>
         </button>
 
         <button
@@ -355,18 +357,42 @@ export default function HouseCostSheetPage({ params }) {
           }`}
         >
           <Target className="w-4 h-4" />
-          <span>Analisis Koefisien Aktual</span>
+          <span>Koefisien</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('opname')}
+          className={`px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition-all whitespace-nowrap ${
+            activeTab === 'opname'
+              ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+              : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200/80'
+          }`}
+        >
+          <ClipboardList className="w-4 h-4" />
+          <span>Pemakaian</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('log')}
+          className={`px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition-all whitespace-nowrap ${
+            activeTab === 'log'
+              ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+              : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200/80'
+          }`}
+        >
+          <History className="w-4 h-4" />
+          <span>Log Mutasi</span>
         </button>
       </div>
 
       {/* Tab Content */}
       <div className="mt-8 animate-fadeIn">
         {activeTab === 'opname' && (
-          <MaterialOpname houseId={house.id} view="pemakaian" onSuccess={fetchCostSheet} />
+          <MaterialOpname houseId={house.id} houseStatus={house.status} view="pemakaian" onSuccess={fetchCostSheet} />
         )}
 
         {activeTab === 'log' && (
-          <MaterialOpname houseId={house.id} view="log" />
+          <MaterialOpname houseId={house.id} houseStatus={house.status} view="log" />
         )}
 
         {activeTab === 'coefficient' && (() => {
@@ -495,7 +521,7 @@ export default function HouseCostSheetPage({ params }) {
                             </button>
                           </div>
                         </div>
-                        <div className="p-0 flex-1">
+                        <div className="p-0 flex-1 overflow-x-auto">
                           <table className="w-full text-left text-xs">
                             <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-100 uppercase">
                               <tr>
@@ -505,13 +531,30 @@ export default function HouseCostSheetPage({ params }) {
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                              {data.coeffs.map((mat, i) => (
-                                <tr key={i} className="hover:bg-slate-50/60 transition">
-                                  <td className="px-4 py-3 font-semibold text-slate-700">{mat.name}</td>
-                                  <td className="px-4 py-3 text-right font-medium text-slate-600">{Number(mat.qty.toFixed(2))} {mat.unit}</td>
-                                  <td className="px-4 py-3 text-right font-black text-emerald-600">{Number((mat.coeff).toFixed(2))}</td>
-                                </tr>
-                              ))}
+                              {data.coeffs.map((mat, i) => {
+                                // Calculate target quantity specifically for this phase and material name
+                                const targetItems = target_material_items.filter(t => (t.phase || 'Umum') === data.phase && t.name === mat.name);
+                                const targetTotalQty = targetItems.reduce((sum, t) => sum + Number(t.quantity), 0);
+                                
+                                let badge = null;
+                                if (targetItems.length === 0) {
+                                  badge = <div className="mt-1"><span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-rose-100 text-rose-700 uppercase tracking-wider whitespace-nowrap border border-rose-200">Di Luar RAB</span></div>;
+                                } else if (mat.qty > targetTotalQty) {
+                                  const diff = mat.qty - targetTotalQty;
+                                  badge = <div className="mt-1"><span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-amber-100 text-amber-700 uppercase tracking-wider whitespace-nowrap border border-amber-200">Over {diff.toLocaleString('id-ID')} {mat.unit}</span></div>;
+                                }
+
+                                return (
+                                  <tr key={i} className="hover:bg-slate-50/60 transition">
+                                    <td className="px-4 py-3 font-semibold text-slate-700">
+                                      {mat.name}
+                                      {badge}
+                                    </td>
+                                    <td className="px-4 py-3 text-right font-medium text-slate-600">{Number(mat.qty.toFixed(2))} {mat.unit}</td>
+                                    <td className="px-4 py-3 text-right font-black text-emerald-600">{Number((mat.coeff).toFixed(2))}</td>
+                                  </tr>
+                                );
+                              })}
                             </tbody>
                           </table>
                         </div>
@@ -561,8 +604,9 @@ export default function HouseCostSheetPage({ params }) {
                                     ))}
                                   </div>
                                   </div>
-                                );
-                              })}
+                                  );
+                                })}
+
                             </div>
                           </div>
                         );
@@ -729,10 +773,28 @@ export default function HouseCostSheetPage({ params }) {
                   {actual_materials.length > 0 ? (
                     actual_materials.slice().sort((a,b) => a.material_name.localeCompare(b.material_name)).map((mat) => {
                       const avgPrice = Number(mat.net_quantity) > 0 ? Number(mat.net_cost) / Number(mat.net_quantity) : 0;
+                      
+                      // Calculate target quantity for this material across all phases
+                      const targetItems = target_material_items.filter(t => t.material_id === mat.material_id);
+                      const targetTotalQty = targetItems.reduce((sum, t) => sum + Number(t.quantity), 0);
+                      
+                      const actualQty = Number(mat.net_quantity);
+                      let badge = null;
+                      
+                      if (targetItems.length === 0) {
+                        badge = <span className="ml-2 px-1.5 py-0.5 rounded text-[9px] font-black bg-rose-100 text-rose-700 uppercase tracking-wider whitespace-nowrap border border-rose-200">Di Luar RAB</span>;
+                      } else if (actualQty > targetTotalQty) {
+                        const diff = actualQty - targetTotalQty;
+                        badge = <span className="ml-2 px-1.5 py-0.5 rounded text-[9px] font-black bg-amber-100 text-amber-700 uppercase tracking-wider whitespace-nowrap border border-amber-200">Over {diff.toLocaleString('id-ID')} {mat.unit}</span>;
+                      }
+
                       return (
                         <tr key={mat.material_id} className="hover:bg-slate-50/50">
                           <td className="py-3 px-4 font-bold text-slate-900">
-                            {mat.material_name} <span className="text-slate-400 font-normal">({mat.material_code})</span>
+                            <div className="flex items-center flex-wrap gap-1">
+                              <span>{mat.material_name} <span className="text-slate-400 font-normal">({mat.material_code})</span></span>
+                              {badge}
+                            </div>
                           </td>
                           <td className="py-3 px-4 font-bold text-blue-600">
                             {Number(mat.net_quantity).toLocaleString('id-ID')} {mat.unit}
@@ -886,6 +948,165 @@ export default function HouseCostSheetPage({ params }) {
         </div>
       )}
       </div>
-    </div>
+
+      </div>
+
+      {/* FORMAL PRINT REPORT LAYOUT (ONLY VISIBLE ON PRINT) */}
+      <div className="hidden print:block font-sans text-black max-w-full space-y-6">
+        
+        {/* Print Header */}
+        <div className="text-center border-b-2 border-black pb-4">
+          <h1 className="text-2xl font-bold uppercase tracking-widest">Laporan Penyelesaian Pembangunan</h1>
+          <h2 className="text-lg mt-1">Blok {house.block_number} &bull; {house.project_name} ({house.type})</h2>
+          <p className="text-xs mt-2 text-gray-600">Dicetak pada: {new Date().toLocaleString('id-ID')}</p>
+        </div>
+
+        {/* Print Ringkasan Eksekutif */}
+        <div>
+          <h3 className="font-bold text-sm uppercase border-b border-black pb-1 mb-2">1. Ringkasan Eksekutif & Finansial</h3>
+          <div className="text-sm text-justify leading-relaxed">
+            Pembangunan fisik unit <strong>Blok {house.block_number}</strong> telah berstatus <strong>{house.status}</strong>. 
+            Dari total target anggaran sebesar <strong>{formatRupiah(summary.target_total_budget)}</strong>, biaya aktual yang terserap adalah <strong>{formatRupiah(summary.actual_total_cost)}</strong> 
+            (Terdiri dari material: {formatRupiah(summary.actual_material_cost)} dan upah borongan: {formatRupiah(summary.actual_labor_cost)}).
+            <br/><br/>
+            <strong>Kesimpulan Finansial:</strong> Unit ini mencatatkan {summary.variance_total < 0 ? 'KERUGIAN (OVERBUDGET)' : summary.variance_total > 0 ? 'PENGHEMATAN (SURPLUS)' : 'BREAK EVEN (SESUAI TARGET)'} sebesar <strong>{formatRupiah(Math.abs(summary.variance_total))}</strong>.
+            {(() => {
+              const overbudgetMats = [];
+              const savedMats = [];
+              actual_materials.forEach(mat => {
+                const targetItems = target_material_items.filter(t => t.material_id === mat.material_id);
+                const targetQty = targetItems.reduce((sum, t) => sum + Number(t.quantity), 0);
+                const diff = targetQty - Number(mat.net_quantity);
+                if (diff < 0) overbudgetMats.push(`${mat.material_name} (Over ${Math.abs(diff).toLocaleString('id-ID')} ${mat.unit})`);
+                else if (diff > 0) savedMats.push(`${mat.material_name} (Sisa ${diff.toLocaleString('id-ID')} ${mat.unit})`);
+              });
+              
+              if (overbudgetMats.length > 0 || savedMats.length > 0) {
+                return (
+                  <div className="mt-3">
+                    <strong>Evaluasi Pemakaian Material Fisik:</strong>
+                    <ul className="list-disc pl-5 mt-1 text-[13px] space-y-1">
+                      {overbudgetMats.length > 0 && <li><span className="text-red-700 font-semibold">Overbudget (Kelebihan Pemakaian):</span> {overbudgetMats.join(', ')}.</li>}
+                      {savedMats.length > 0 && <li><span className="text-emerald-700 font-semibold">Penghematan (Sisa Target):</span> {savedMats.join(', ')}.</li>}
+                    </ul>
+                  </div>
+                );
+              }
+              return null;
+            })()}
+          </div>
+        </div>
+
+        {/* Print Material Terpakai */}
+        <div className="pt-2">
+          <h3 className="font-bold text-sm uppercase border-b border-black pb-1 mb-2">2. Rincian Pemakaian Material Aktual</h3>
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="border-b-2 border-black">
+                <th className="py-1">Nama Material</th>
+                <th className="py-1 text-right">Target RAB</th>
+                <th className="py-1 text-right">Aktual Terpakai (Net)</th>
+                <th className="py-1 text-right">Selisih Qty</th>
+                <th className="py-1 text-right">Biaya Aktual</th>
+              </tr>
+            </thead>
+            <tbody>
+              {actual_materials.length > 0 ? (
+                actual_materials.slice().sort((a,b) => a.material_name.localeCompare(b.material_name)).map(mat => {
+                  const targetItems = target_material_items.filter(t => t.material_id === mat.material_id);
+                  const targetQty = targetItems.reduce((sum, t) => sum + Number(t.quantity), 0);
+                  const diff = targetQty - Number(mat.net_quantity);
+                  
+                  return (
+                    <tr key={mat.material_id} className="border-b border-gray-300">
+                      <td className="py-1">{mat.material_name}</td>
+                      <td className="py-1 text-right">{targetQty > 0 ? `${targetQty} ${mat.unit}` : '-'}</td>
+                      <td className="py-1 text-right font-bold">{Number(mat.net_quantity).toLocaleString('id-ID')} {mat.unit}</td>
+                      <td className={`py-1 text-right ${diff < 0 ? 'font-bold' : ''}`}>
+                        {diff < 0 ? `Over ${Math.abs(diff)}` : diff > 0 ? `Sisa ${diff}` : 'Pas'}
+                      </td>
+                      <td className="py-1 text-right font-bold">{formatRupiah(mat.net_cost)}</td>
+                    </tr>
+                  )
+                })
+              ) : (
+                <tr><td colSpan="5" className="py-2 text-center text-gray-500">Belum ada material terpakai.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Print Material Mutasi Flow */}
+        <div className="pt-2">
+          <h3 className="font-bold text-sm uppercase border-b border-black pb-1 mb-2">3. Audit Arus Logistik Material (In/Out)</h3>
+          <table className="w-full text-left text-[11px] border-collapse">
+            <thead>
+              <tr className="border-b border-black">
+                <th className="py-1">Material</th>
+                <th className="py-1 text-right">Terkirim Ke Lapangan</th>
+                <th className="py-1 text-right">Retur / Pindah Keluar</th>
+                <th className="py-1 text-right">Netto Fisik Terpakai</th>
+              </tr>
+            </thead>
+            <tbody>
+              {actual_materials.length > 0 ? (
+                actual_materials.slice().sort((a,b) => a.material_name.localeCompare(b.material_name)).map(mat => (
+                  <tr key={'audit-'+mat.material_id} className="border-b border-gray-200">
+                    <td className="py-1">{mat.material_name}</td>
+                    <td className="py-1 text-right">{Number(mat.total_in).toLocaleString('id-ID')} {mat.unit}</td>
+                    <td className="py-1 text-right">{Number(mat.total_out) > 0 ? `${Number(mat.total_out).toLocaleString('id-ID')} ${mat.unit}` : '-'}</td>
+                    <td className="py-1 text-right font-bold">{Number(mat.net_quantity).toLocaleString('id-ID')} {mat.unit}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr><td colSpan="4" className="py-2 text-center text-gray-500">Kosong.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Print Upah Borongan */}
+        <div className="pt-2">
+          <h3 className="font-bold text-sm uppercase border-b border-black pb-1 mb-2">4. Rincian Upah Borongan & Tenaga Kerja</h3>
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="border-b border-black">
+                <th className="py-1">Item Pekerjaan</th>
+                <th className="py-1">Kepala Tukang</th>
+                <th className="py-1 text-right">Nilai Kontrak</th>
+                <th className="py-1 text-right">Aktual Dibayar</th>
+              </tr>
+            </thead>
+            <tbody>
+              {labor_contracts.length > 0 ? (
+                labor_contracts.map(c => (
+                  <tr key={c.id} className="border-b border-gray-300">
+                    <td className="py-1">{c.job_name}</td>
+                    <td className="py-1">{c.kepala_tukang_name}</td>
+                    <td className="py-1 text-right">{formatRupiah(c.contract_value)}</td>
+                    <td className="py-1 text-right font-bold">{formatRupiah(c.total_paid)}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr><td colSpan="4" className="py-2 text-center text-gray-500">Tidak ada kontrak borongan.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        
+        {/* Signatures */}
+        <div className="pt-12 flex justify-between px-10 text-sm">
+          <div className="text-center">
+            <p className="mb-16">Dibuat Oleh,</p>
+            <p className="font-bold border-b border-black pb-0.5 inline-block min-w-[150px]">Admin/Logistik</p>
+          </div>
+          <div className="text-center">
+            <p className="mb-16">Mengetahui,</p>
+            <p className="font-bold border-b border-black pb-0.5 inline-block min-w-[150px]">Manajer Proyek</p>
+          </div>
+        </div>
+
+      </div>
+    </>
   );
 }

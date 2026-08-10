@@ -372,7 +372,7 @@ export default function PurchasesPage() {
                     <th className="py-3.5 px-6">Tanggal Beli</th>
                     <th className="py-3.5 px-6">No. Nota / Invoice</th>
                     <th className="py-3.5 px-6">Supplier</th>
-                    <th className="py-3.5 px-6 text-center">Total Item</th>
+                    <th className="py-3.5 px-6">Rincian Item Material</th>
                     <th className="py-3.5 px-6 text-right">Total Nilai Nota</th>
                     <th className="py-3.5 px-6 text-center print:hidden">Aksi</th>
                   </tr>
@@ -390,10 +390,19 @@ export default function PurchasesPage() {
                         <td className="py-4 px-6 font-bold text-slate-800">
                           {p.supplier_name}
                         </td>
-                        <td className="py-4 px-6 text-center">
-                          <span className="px-2.5 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded-lg border border-blue-200">
-                            {p.total_items || 0} Item
-                          </span>
+                        <td className="py-4 px-6">
+                          {p.item_details ? (
+                            <div className="flex flex-col gap-1.5">
+                              {p.item_details.split('||').map((detail, idx) => (
+                                <div key={idx} className="flex items-center gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0"></div>
+                                  <span className="text-xs font-semibold text-slate-700">{detail}</span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-slate-400 italic">Tidak ada rincian</span>
+                          )}
                         </td>
                         <td className="py-4 px-6 text-right font-extrabold text-slate-900">
                           {formatRupiah(p.total_amount)}

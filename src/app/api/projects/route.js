@@ -8,6 +8,7 @@ export async function GET() {
       SELECT p.*, 
              COUNT(h.id) as total_houses,
              SUM(CASE WHEN h.status = 'Pembangunan' THEN 1 ELSE 0 END) as active_houses,
+             SUM(CASE WHEN h.status = 'Belum Mulai' THEN 1 ELSE 0 END) as pending_houses,
              SUM(CASE WHEN h.status = 'Selesai' OR h.status = 'Serah Terima' THEN 1 ELSE 0 END) as completed_houses
       FROM projects p
       LEFT JOIN houses h ON p.id = h.project_id
