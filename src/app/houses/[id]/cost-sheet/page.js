@@ -717,7 +717,7 @@ export default function HouseCostSheetPage({ params }) {
                             </div>
                           </td>
                         </tr>
-                        {phaseItems.sort((a,b) => a.name.localeCompare(b.name)).map(item => (
+                        {phaseItems.filter(i => !i.name.includes('_DUMMY_PHASE_HOLDER_') && !i.name.includes('[Tahapan Tanpa Material')).sort((a,b) => a.name.localeCompare(b.name)).map(item => (
                           <tr key={item.id} className="hover:bg-slate-50/50">
                             <td className="py-3 px-4 font-bold text-slate-800">
                               {item.name} {item.material_code && <span className="text-slate-400 font-normal">({item.material_code})</span>}

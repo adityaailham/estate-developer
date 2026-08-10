@@ -17,6 +17,11 @@ export default function RabTemplatesPage() {
   const [submitting, setSubmitting] = useState(false);
   const [modalError, setModalError] = useState(null);
 
+  // Delete Modal State
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [templateToDelete, setTemplateToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const [formHeader, setFormHeader] = useState({ house_type: 'Tipe 36', description: '' });
   const [formPhases, setFormPhases] = useState([
     {
@@ -144,16 +149,30 @@ export default function RabTemplatesPage() {
       let flatItems = [];
       formPhases.forEach(p => {
         const pName = p.phaseName.trim() || 'Umum';
-        p.items.forEach(i => {
+        if (p.items.length === 0) {
           flatItems.push({
-            ...i,
+            item_type: 'Material',
+            material_id: null,
+            name: '[Tahapan Tanpa Material (Hanya Pencatat Volume)]',
+            unit: '-',
             phase: pName,
             work_volume: p.work_volume || null,
             work_unit: p.work_unit || null,
-            quantity: Number(i.quantity),
-            estimated_price: Number(i.estimated_price)
+            quantity: 0,
+            estimated_price: 0
           });
-        });
+        } else {
+          p.items.forEach(i => {
+            flatItems.push({
+              ...i,
+              phase: pName,
+              work_volume: p.work_volume || null,
+              work_unit: p.work_unit || null,
+              quantity: Number(i.quantity),
+              estimated_price: Number(i.estimated_price)
+            });
+          });
+        }
       });
       const payload = {
         ...formHeader,
@@ -209,7 +228,7 @@ export default function RabTemplatesPage() {
       phaseName: k, 
       work_volume: grouped[k][0].work_volume || '',
       work_unit: grouped[k][0].work_unit || '',
-      items: grouped[k] 
+      items: grouped[k].filter(i => !i.name.includes('_DUMMY_PHASE_HOLDER_') && !i.name.includes('[Tahapan Tanpa Material'))
     }));
     if (mappedPhases.length === 0) mappedPhases.push({ phaseName: 'Umum', work_volume: '', work_unit: '', items: [] });
     
@@ -217,19 +236,29 @@ export default function RabTemplatesPage() {
     setShowModal(true);
   };
 
-  const handleDelete = async (templateId) => {
-    if (!window.confirm('Yakin ingin menghapus template ini?')) return;
+  const confirmDeleteTemplate = (templateId, houseType) => {
+    setTemplateToDelete({ id: templateId, houseType });
+    setShowDeleteModal(true);
+  };
+
+  const executeDeleteTemplate = async () => {
+    if (!templateToDelete) return;
+    setIsDeleting(true);
     try {
-      const res = await fetch(`/api/rab-templates/${templateId}`, { method: 'DELETE' });
+      const res = await fetch(`/api/rab-templates/${templateToDelete.id}`, { method: 'DELETE' });
       const json = await res.json();
       if (json.success) {
         showToast('Template RAB berhasil dihapus', 'success');
         fetchData();
+        setShowDeleteModal(false);
       } else {
         showToast(json.error || 'Gagal menghapus template', 'error');
       }
     } catch (err) {
       showToast('Terjadi kesalahan koneksi', 'error');
+    } finally {
+      setIsDeleting(false);
+      setTemplateToDelete(null);
     }
   };
 
@@ -289,7 +318,7 @@ export default function RabTemplatesPage() {
                     </span>
                     <div className="flex items-center gap-2">
                       <button onClick={() => openEditModal(tem)} className="text-[10px] px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md font-bold">Edit</button>
-                      <button onClick={() => handleDelete(tem.id)} className="text-[10px] px-2 py-1 bg-red-50 hover:bg-red-100 text-red-600 rounded-md font-bold">Hapus</button>
+                      <button onClick={() => confirmDeleteTemplate(tem.id, tem.house_type)} className="text-[10px] px-2 py-1 bg-red-50 hover:bg-red-100 text-red-600 rounded-md font-bold">Hapus</button>
                     </div>
                   </div>
                 </div>
@@ -314,18 +343,22 @@ export default function RabTemplatesPage() {
                           </span>
                         </div>
                         <div className="space-y-1.5">
-                          {phaseItems.map((item) => (
-                            <div key={item.id} className="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg bg-slate-50 border border-slate-100">
-                              <div>
-                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold mr-2 ${item.item_type === 'Material' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
-                                  {item.item_type}
-                                </span>
-                                <span className="font-bold text-slate-800">{item.name}</span>
-                                <span className="text-slate-500 ml-1">({Number(item.quantity)} {item.unit})</span>
+                          {phaseItems.filter(i => !i.name.includes('_DUMMY_PHASE_HOLDER_') && !i.name.includes('[Tahapan Tanpa Material')).length > 0 ? (
+                            phaseItems.filter(i => !i.name.includes('_DUMMY_PHASE_HOLDER_') && !i.name.includes('[Tahapan Tanpa Material')).map((item) => (
+                              <div key={item.id} className="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                                <div>
+                                  <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold mr-2 ${item.item_type === 'Material' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
+                                    {item.item_type}
+                                  </span>
+                                  <span className="font-bold text-slate-800">{item.name}</span>
+                                  <span className="text-slate-500 ml-1">({Number(item.quantity)} {item.unit})</span>
+                                </div>
+                                <span className="font-extrabold text-slate-900">{formatRupiah(item.total_price)}</span>
                               </div>
-                              <span className="font-extrabold text-slate-900">{formatRupiah(item.total_price)}</span>
-                            </div>
-                          ))}
+                            ))
+                          ) : (
+                            <p className="text-xs text-slate-400 italic px-2">Belum ada rincian material/upah.</p>
+                          )}
                         </div>
                       </div>
                     ))
@@ -555,6 +588,46 @@ export default function RabTemplatesPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-2xl border border-slate-200 max-w-sm w-full p-6 shadow-2xl relative">
+            <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="w-6 h-6" />
+            </div>
+            
+            <h3 className="text-lg font-black text-slate-900 text-center mb-2">Hapus Template RAB?</h3>
+            <p className="text-sm text-slate-500 text-center mb-6">
+              Apakah Anda yakin ingin menghapus Template <strong>{templateToDelete?.houseType}</strong>? <br/><br/>
+              <span className="text-red-500 font-bold">PERINGATAN:</span> Template ini tidak akan bisa digunakan lagi untuk unit rumah baru.
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(false)}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold transition"
+                disabled={isDeleting}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={executeDeleteTemplate}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-bold shadow-md shadow-red-500/20 transition flex items-center justify-center gap-2"
+              >
+                {isDeleting ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Menghapus...</>
+                ) : (
+                  <><Trash2 className="w-4 h-4" /> Ya, Hapus</>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -30,6 +30,11 @@ export default function PurchasesPage() {
   const [submitting, setSubmitting] = useState(false);
   const [modalError, setModalError] = useState(null);
 
+  // Delete Modal State
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [purchaseToDelete, setPurchaseToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const [formHeader, setFormHeader] = useState({
     supplier_id: '',
     invoice_number: '',
@@ -186,19 +191,29 @@ export default function PurchasesPage() {
     }
   };
 
-  const handleDeletePurchase = async (purchase) => {
-    if (!confirm(`Apakah Anda yakin ingin membatalkan/menghapus Nota Pembelian '${purchase.invoice_number}' dan mengurangi stok yang masuk?`)) return;
+  const confirmDeletePurchase = (purchase) => {
+    setPurchaseToDelete(purchase);
+    setShowDeleteModal(true);
+  };
+
+  const executeDeletePurchase = async () => {
+    if (!purchaseToDelete) return;
+    setIsDeleting(true);
     try {
-      const res = await fetch(`/api/purchases/${purchase.id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/purchases/${purchaseToDelete.id}`, { method: 'DELETE' });
       const json = await res.json();
       if (json.success) {
         showToast('Nota pembelian berhasil dibatalkan & stok disesuaikan', 'success');
         fetchData();
+        setShowDeleteModal(false);
       } else {
         showToast('Gagal menghapus nota: ' + (json.error || 'Terjadi kesalahan'), 'error');
       }
     } catch (err) {
       showToast('Terjadi kesalahan koneksi saat menghapus nota', 'error');
+    } finally {
+      setIsDeleting(false);
+      setPurchaseToDelete(null);
     }
   };
 
@@ -409,7 +424,7 @@ export default function PurchasesPage() {
                         </td>
                         <td className="py-4 px-6 text-center print:hidden">
                           <button
-                            onClick={() => handleDeletePurchase(p)}
+                            onClick={() => confirmDeletePurchase(p)}
                             className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition"
                             title="Batalkan Nota & Rollback Stok"
                           >
@@ -638,6 +653,46 @@ export default function PurchasesPage() {
                 </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-2xl border border-slate-200 max-w-sm w-full p-6 shadow-2xl relative">
+            <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="w-6 h-6" />
+            </div>
+            
+            <h3 className="text-lg font-black text-slate-900 text-center mb-2">Batalkan Nota Pembelian?</h3>
+            <p className="text-sm text-slate-500 text-center mb-6">
+              Apakah Anda yakin ingin membatalkan Nota Pembelian <strong>{purchaseToDelete?.invoice_number}</strong>? <br/><br/>
+              <span className="text-red-500 font-bold">PENTING:</span> Tindakan ini akan memotong kembali stok material yang sudah masuk dari sistem.
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(false)}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold transition"
+                disabled={isDeleting}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={executeDeletePurchase}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-bold shadow-md shadow-red-500/20 transition flex items-center justify-center gap-2"
+              >
+                {isDeleting ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Memproses...</>
+                ) : (
+                  <><Trash2 className="w-4 h-4" /> Ya, Batalkan</>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

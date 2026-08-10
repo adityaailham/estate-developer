@@ -54,6 +54,11 @@ function HousesContent() {
   const [submitting, setSubmitting] = useState(false);
   const [modalError, setModalError] = useState(null);
 
+  // Delete Modal State
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [houseToDelete, setHouseToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // Edit Status Modal State
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedHouseForEdit, setSelectedHouseForEdit] = useState(null);
@@ -145,20 +150,29 @@ function HousesContent() {
     }
   };
 
-  const handleDeleteHouse = async (id, blockName) => {
-    if (!confirm(`Hapus permanen unit rumah blok ${blockName} ini?\n\nPERINGATAN: Semua data RAB dan Cost Sheet unit ini akan ikut terhapus!`)) return;
-    
+  const confirmDeleteHouse = (id, blockName) => {
+    setHouseToDelete({ id, blockName });
+    setShowDeleteModal(true);
+  };
+
+  const executeDeleteHouse = async () => {
+    if (!houseToDelete) return;
+    setIsDeleting(true);
     try {
-      const res = await fetch(`/api/houses/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/houses/${houseToDelete.id}`, { method: 'DELETE' });
       const json = await res.json();
       if (json.success) {
         showToast('Unit rumah berhasil dihapus', 'success');
         fetchHouses();
+        setShowDeleteModal(false);
       } else {
         showToast(json.error || 'Gagal menghapus unit rumah', 'error');
       }
     } catch (err) {
       showToast('Terjadi kesalahan koneksi saat menghapus unit', 'error');
+    } finally {
+      setIsDeleting(false);
+      setHouseToDelete(null);
     }
   };
 
@@ -366,7 +380,7 @@ function HousesContent() {
                     {/* Action Buttons: Edit Status & Jump to Cost Sheet */}
                     <div className="mt-6 pt-4 border-t border-slate-100 flex items-center gap-2">
                       <button
-                        onClick={() => handleDeleteHouse(house.id, house.block_number)}
+                        onClick={() => confirmDeleteHouse(house.id, house.block_number)}
                         className="p-2.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 transition shrink-0"
                         title="Hapus Unit"
                       >
@@ -629,6 +643,46 @@ function HousesContent() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-2xl border border-slate-200 max-w-sm w-full p-6 shadow-2xl relative">
+            <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="w-6 h-6" />
+            </div>
+            
+            <h3 className="text-lg font-black text-slate-900 text-center mb-2">Hapus Unit Rumah?</h3>
+            <p className="text-sm text-slate-500 text-center mb-6">
+              Apakah Anda yakin ingin menghapus permanen unit <strong>Blok {houseToDelete?.blockName}</strong>? <br/><br/>
+              <span className="text-red-500 font-bold">PERINGATAN:</span> Semua data RAB dan Cost Sheet unit ini akan ikut terhapus dan tidak dapat dikembalikan!
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(false)}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold transition"
+                disabled={isDeleting}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={executeDeleteHouse}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-bold shadow-md shadow-red-500/20 transition flex items-center justify-center gap-2"
+              >
+                {isDeleting ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Menghapus...</>
+                ) : (
+                  <><Trash2 className="w-4 h-4" /> Ya, Hapus</>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
